@@ -1,25 +1,22 @@
 package kpes.finapp.service;
 
-import java.io.File;
-import java.io.IOException;
+import static kpes.finapp.service.BankStatementParserService.getTransactions;
 
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.text.PDFTextStripper;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import kpes.finapp.service.BankStatementParserService.Bank;
 
 public class App {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         
-        File pdfFile = new File("C:\\Users\\KPES\\Desktop\\services\\sampleStatement.pdf");
+        String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement.pdf";
+        Path pdfFile = Paths.get(pdfPath);
 
-        PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile("C:\\Users\\KPES\\Desktop\\services\\sampleStatement.pdf"));
-
-        PDFTextStripper pdfStripper = new PDFTextStripper();
-
-        String text = pdfStripper.getText(document);
-
-        System.out.println(text);
+        String fullText = BankStatementParserService.extractText(pdfFile);
+        String txtList = getTransactions(fullText, Bank.BPICC);
+        System.out.println(txtList);
+       
 
     }
 
