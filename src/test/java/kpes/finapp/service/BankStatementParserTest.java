@@ -11,11 +11,13 @@ import kpes.finapp.service.BankStatementParser.Bank;
 
 import static kpes.finapp.service.BankStatementParser.extractText;
 import static kpes.finapp.service.BankStatementParser.getData;
+import static kpes.finapp.service.BankStatementParser.processData;
 
 public class BankStatementParserTest {
 
     // String paths to test files
-    String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement.pdf";
+    String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement2.pdf";
+    String noTransactionStatement = "C:\\Users\\KPES\\Desktop\\services\\noTransactions.pdf";
     String emptyPdfPath = "C:\\Users\\KPES\\Desktop\\services\\empty.pdf";
     
   
@@ -37,13 +39,13 @@ public class BankStatementParserTest {
     // extractText handles file does not exist
     @Test
     void testErrorHandlingExtractText() {
-        //TODO: handling exceptions
-        assertTrue(false);
+        assertEquals("Invalid path", extractText(Paths.get("non-existing_file.pdf")));
+
     }
 
     // getData outputs a String value for non empty pdf
     @Test
-    void testNonEmptyPDFGetTransactions() {
+    void testNonEmptyPDFGetData() {
         Path pdfFile = Paths.get(pdfPath);
         String txnList = getData(extractText(pdfFile), Bank.BPICC);
         assertFalse(txnList.isEmpty() || txnList.isBlank());
@@ -51,22 +53,65 @@ public class BankStatementParserTest {
 
     // getData throws an AssertionError for empty String argument
     @Test
-    void testEmptyPDFGetTransactions() {
+    void testEmptyPDFGetData() {
         assertThrows(AssertionError.class,() -> getData(""));
     }
 
     // getData throws an AssertionError for invalid PDF content
-    //TODO
+    @Test
+    void testInvalidFormatGetData() {
+        assertThrows(AssertionError.class,() -> getData("Something"));
+    }
 
 
     // processData returns a valid BankStatement object for valid BPICC Bank Statement PDF
-    // TODO
+    @Test
+    void testValidBankStatementBPICCProcessData() {
+        Path pdfFile = Paths.get(pdfPath);
+        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        assertInstanceOf(BankStatement.class, processData(txnList, Bank.BPICC));
+    }
+
+    // processData returns a BankStatement with populated list of summarized data
+    @Test
+    void testNonEmptySummaryBPICCProcessData() {
+        Path pdfFile = Paths.get(pdfPath);
+        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        BankStatement bs = processData(txnList, Bank.BPICC);
+        assertTrue(!bs.getSummary().isEmpty());
+    }
+
+    // processData returns a BankStatement populated list of summarized data even for statement with no transactions
+    @Test
+    void testSummaryForNoTxnBPICCProcessData() {
+        Path pdfFile = Paths.get(noTransactionStatement);
+        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        BankStatement bs = processData(txnList, Bank.BPICC);
+        assertTrue(!bs.getSummary().isEmpty());
+    }
+
+    // processData returns a BankStatement with populated list of transaction details for statement with transactions
+    @Test
+    void testNonEmptyDetailsBPICCProcessData() {
+        Path pdfFile = Paths.get(pdfPath);
+        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        BankStatement bs = processData(txnList, Bank.BPICC);
+        assertTrue(!bs.getDetails().isEmpty());
+    }
+
+    // processData returns a BankStatement with empty list of transaction details for statement with no transactions
+    @Test
+    void testEmptyDetailsBPICCProcessData() {
+        Path pdfFile = Paths.get(noTransactionStatement);
+        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        BankStatement bs = processData(txnList, Bank.BPICC);
+        assertTrue(bs.getDetails().isEmpty());
+    }
 
 
     // negative testing for processData 
+    // - if format changed
     // TODO
-
-
 
     
 }

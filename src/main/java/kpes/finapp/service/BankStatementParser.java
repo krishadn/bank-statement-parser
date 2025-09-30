@@ -43,8 +43,7 @@ public class BankStatementParser {
             pdfStripper.setSortByPosition(true);
             text = pdfStripper.getText(document).trim();
         } catch (IOException e) {
-            // TODO: handle exceptions
-            e.printStackTrace();
+            text = "Invalid path";
         }
         
         return text;
@@ -55,17 +54,23 @@ public class BankStatementParser {
      * Removes all text from an extracted PDF text that are not part of the list of transactions
      * @param fullText non-empty String that comes from using {@link #extractText(Path)}
      * @param bank any of the supported bank statements {@link #Bank}
-     * @return String with only the list of transactions
+     * @return String with only the relevant data
      */
     public static String getData(String fullText, Bank bank) {
         assert !(fullText.isBlank() || fullText.isEmpty()) : "Text argument is empty/blank";
         
         String delimiter = getDelimiter(bank);
-        assert fullText.contains(delimiter): "Invalid bank statement";
+        assert fullText.contains(delimiter): "Bank statement format not supported. Check format updates";
 
         int txnIndex = getDataIndex(bank);
 
-        return fullText.split(delimiter)[txnIndex].trim().replaceAll(" ", "");
+        String data = fullText.split(delimiter)[txnIndex].trim();
+        
+        if (bank == Bank.BPICC) {
+            data = data.replaceAll(" ", "");
+        }
+
+        return data;
     }
 
 
@@ -156,7 +161,16 @@ public class BankStatementParser {
     private static BankStatement processBPICC(String data) {
         String[] dataParts = splitBPICC(data);
         List<BankTransaction> summary = getSummaryBPICC(dataParts[1]);
-        List<BankTransaction> details = getDetailsBPICC(dataParts[2]);
+
+        List<BankTransaction> details;
+
+        // if there is no transactions, array will only have 2 elements
+        if (dataParts.length == 3) {
+            details = getDetailsBPICC(dataParts[2]);
+        } else {
+            details = new ArrayList<BankTransaction>();
+        }
+
         BankStatement bs = new BankStatement(Bank.BPICC, summary, details);
         return bs;
     }
@@ -166,9 +180,18 @@ public class BankStatementParser {
      * Splits the data into its constituent parts using account number as delimiter
      * @param data clean text from the bank statement 
      * @return data split into (0) header, (1) summary, (2) transaction listing
+     * @throws IllegalArgumentException when the text cannot be split using account number
      */
     private static String[] splitBPICC(String data) {
-        return data.split("\\d{6}-\\d{1}-\\d{2}-\\d{7}");
+        String acctNum = "\\d{6}-\\d{1}-\\d{2}-\\d{7}";
+        Pattern p = Pattern.compile(acctNum);
+        Matcher m = p.matcher(data);
+
+        if (m.find()) {
+            return p.split(data);
+        } else {
+            throw new IllegalArgumentException("Cannot split argument using existing regex. Check format update");
+        }
     }
 
 
@@ -199,6 +222,10 @@ public class BankStatementParser {
             } catch (ParseException e) {
                 e.printStackTrace();
             }
+        }
+
+        if (summary.isEmpty()) {
+            throw new IllegalStateException("Did not find match using current regex");
         }
 
         return summary;
@@ -236,11 +263,19 @@ public class BankStatementParser {
             }
         }
 
+        if (details.isEmpty()) {
+            throw new IllegalStateException("Did not find match using current regex");
+        }
+
         return details;
     }
 
 
+    public static void saveBankStatementToExcel(BankStatement bs){
 
+        // TODO
+
+    }
 
 
 

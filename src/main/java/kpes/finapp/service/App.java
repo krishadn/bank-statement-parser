@@ -17,7 +17,9 @@ public class App {
         /* 
          * Testing -------------------------------------------
          */
-        String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement2.pdf";
+        // String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement2.pdf";
+        String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\noTransactions.pdf";
+
         
         Path pdfFile = Paths.get(pdfPath);
 
