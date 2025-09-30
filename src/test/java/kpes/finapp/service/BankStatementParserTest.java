@@ -7,12 +7,12 @@ import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Test;
 
-import kpes.finapp.service.BankStatementParserService.Bank;
+import kpes.finapp.service.BankStatementParser.Bank;
 
-import static kpes.finapp.service.BankStatementParserService.extractText;
-import static kpes.finapp.service.BankStatementParserService.getTransactions;
+import static kpes.finapp.service.BankStatementParser.extractText;
+import static kpes.finapp.service.BankStatementParser.getData;
 
-public class BankStatementParserServiceTest {
+public class BankStatementParserTest {
 
     // String paths to test files
     String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement.pdf";
@@ -41,19 +41,31 @@ public class BankStatementParserServiceTest {
         assertTrue(false);
     }
 
-    // getTransactions outputs a String value for non empty pdf
+    // getData outputs a String value for non empty pdf
     @Test
     void testNonEmptyPDFGetTransactions() {
         Path pdfFile = Paths.get(pdfPath);
-        String txnList = getTransactions(extractText(pdfFile), Bank.BPICC);
+        String txnList = getData(extractText(pdfFile), Bank.BPICC);
         assertFalse(txnList.isEmpty() || txnList.isBlank());
     }
 
-    // getTransactions throws an AssertionError for empty String argument
+    // getData throws an AssertionError for empty String argument
     @Test
     void testEmptyPDFGetTransactions() {
-        assertThrows(AssertionError.class,() -> getTransactions(""));
+        assertThrows(AssertionError.class,() -> getData(""));
     }
+
+    // getData throws an AssertionError for invalid PDF content
+    //TODO
+
+
+    // processData returns a valid BankStatement object for valid BPICC Bank Statement PDF
+    // TODO
+
+
+    // negative testing for processData 
+    // TODO
+
 
 
     
