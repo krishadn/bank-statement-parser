@@ -4,7 +4,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -28,6 +33,10 @@ public class BankStatementParser {
         GCASH
     }
 
+    private enum DateType {
+        DUE,
+        STATEMENT
+    }
 
     /**
      * Method to extract text from a PDF file using {@link PDFTextStripper}
@@ -49,6 +58,138 @@ public class BankStatementParser {
         return text;
     }
 
+    /**
+     * To get the statement date of the bank statement
+     * @param fullText non-empty String that comes from using {@link #extractText(Path)}
+     * @param bank any of the supported bank statements {@link #Bank}
+     * @return {@link LocalDate} representing the statement date
+     */
+    public static LocalDate parseStatementDate(String fullText, Bank bank) {
+        String dateString = "";
+        switch (bank) {
+            case BPICC:
+                dateString = parseDateBPI(fullText, DateType.STATEMENT);
+            case GCASH:
+                // TODO: for next iteration
+
+                break;
+            default:
+                break;
+        }
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMMdd,yyyy");
+            LocalDate date = LocalDate.parse(dateString, formatter);
+            return date;
+        }
+        catch (DateTimeParseException e) {
+            e.printStackTrace();
+            // TODO handle exception
+        }
+
+        return null;
+
+    }
+
+    /**
+     * To set up a default parameter value for Bank in {@link #parseStatementDate(String, Bank)}
+     * @param fullText text that comes from using {@link #extractText(Path)}
+     * @return {@link LocalDate} representing the statement date
+     */
+    public static LocalDate parseStatementDate(String fullText) {
+        return parseStatementDate(fullText, Bank.BPICC);
+    }
+
+    /**
+     * To get the due date of the bank statement
+     * @param fullText non-empty String that comes from using {@link #extractText(Path)}
+     * @param bank any of the supported bank statements {@link #Bank}
+     * @return {@link LocalDate} representing the due date
+     */
+    public static LocalDate parseDueDate(String fullText, Bank bank) {
+        String dateString = "";
+        switch (bank) {
+            case BPICC:
+                dateString = parseDateBPI(fullText, DateType.DUE);
+            case GCASH:
+                // TODO: for next iteration
+
+                break;
+            default:
+                break;
+        }
+
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMMdd,yyyy");
+            LocalDate date = LocalDate.parse(dateString, formatter);
+            return date;
+        }
+        catch (DateTimeParseException e) {
+            e.printStackTrace();
+            // TODO handle exception
+        }
+
+        return null;
+        
+    }
+
+    /**
+     * To set up a default parameter value for Bank in {@link #parseDueDate(String, Bank)}
+     * @param fullText text that comes from using {@link #extractText(Path)}
+     * @return {@link LocalDate} representing the due date
+     */
+    public static LocalDate parseDueDate(String fullText) {
+        return parseDueDate(fullText, Bank.BPICC);
+    }
+
+    /**
+     * Parses the text to get the statement or due date in this format: MMMMdd,yyyy
+     * @param fullText text that comes from using {@link #extractText(Path)}
+     * @return date String in MMMMdd,yyyy format
+     */
+    private static String parseDateBPI(String fullText, DateType dt) {
+
+        String dateRegex = "";
+
+        if (dt.equals(DateType.STATEMENT)){
+            dateRegex = "S T A T E M E N T D A T E ([\\w\\s]*\\d \\d? ?, 2 0 \\d \\d)";
+        } else if (dt.equals(DateType.DUE)) {
+            dateRegex = "P A Y M E N T D U E D A T E ([\\w\\s]*\\d \\d? ?, 2 0 \\d \\d)";
+        }
+
+        Pattern p = Pattern.compile(dateRegex);
+        Matcher matcher = p.matcher(fullText);
+
+        if (matcher.find()){
+            String[] rawDate = matcher.group(1).split(" ");
+            int digitCount = 0;
+
+            for (int i=1; i < rawDate.length; i++) {
+                if (rawDate[i].matches("\\d")) {
+                    digitCount++;
+                }
+                rawDate[i] = rawDate[i].toLowerCase();
+            }
+
+            if (digitCount < 6) {
+                int insertionIndex = String.join("", rawDate).indexOf(",") - 1;
+                String[] leftPart = Arrays.copyOfRange(rawDate, 0, insertionIndex);
+                String[] rightPart = Arrays.copyOfRange(rawDate, insertionIndex, rawDate.length);
+                List<String> fullDate = new ArrayList<>();
+                Collections.addAll(fullDate, leftPart);
+                fullDate.add("0");
+                Collections.addAll(fullDate, rightPart);
+                return String.join("", fullDate);
+
+            }
+            
+            return String.join("", rawDate);
+        }
+
+        return "";
+
+    }
+
 
     /**
      * Removes all text from an extracted PDF text that are not part of the list of transactions
@@ -56,7 +197,7 @@ public class BankStatementParser {
      * @param bank any of the supported bank statements {@link #Bank}
      * @return String with only the relevant data
      */
-    public static String getData(String fullText, Bank bank) {
+    public static String parseData(String fullText, Bank bank) {
         assert !(fullText.isBlank() || fullText.isEmpty()) : "Text argument is empty/blank";
         
         String delimiter = getDelimiter(bank);
@@ -75,12 +216,12 @@ public class BankStatementParser {
 
 
     /**
-     * To set up a default parameter value for Bank in {@link #getData(String, Bank)}
+     * To set up a default parameter value for Bank in {@link #parseData(String, Bank)}
      * @param fullText text that comes from using {@link #extractText(Path)}
      * @return String with only the list of transactions
      */
-    public static String getData(String fullText) {
-        return getData(fullText, Bank.BPICC);
+    public static String parseData(String fullText) {
+        return parseData(fullText, Bank.BPICC);
     }
 
     
@@ -160,13 +301,13 @@ public class BankStatementParser {
      */
     private static BankStatement processBPICC(String data) {
         String[] dataParts = splitBPICC(data);
-        List<BankTransaction> summary = getSummaryBPICC(dataParts[1]);
+        List<BankTransaction> summary = parseSummaryBPICC(dataParts[1]);
 
         List<BankTransaction> details;
 
         // if there is no transactions, array will only have 2 elements
         if (dataParts.length == 3) {
-            details = getDetailsBPICC(dataParts[2]);
+            details = parseDetailsBPICC(dataParts[2]);
         } else {
             details = new ArrayList<BankTransaction>();
         }
@@ -201,7 +342,7 @@ public class BankStatementParser {
      * @param summaryData summary of the month's transactions
      * @return list of {@link BankTransaction}
      */
-    private static ArrayList<BankTransaction> getSummaryBPICC(String summaryData) {
+    private static ArrayList<BankTransaction> parseSummaryBPICC(String summaryData) {
 
         ArrayList<BankTransaction> summary = new ArrayList<BankTransaction>();
 
@@ -239,7 +380,7 @@ public class BankStatementParser {
      * @return list of {@link BankTransaction}
      * Note: there is no support yet for SIP details
      */
-    private static ArrayList<BankTransaction> getDetailsBPICC(String detailsData) {
+    private static ArrayList<BankTransaction> parseDetailsBPICC(String detailsData) {
 
         ArrayList<BankTransaction> details = new ArrayList<BankTransaction>();
         String[] parts = detailsData.split("S.I.P.BALANCESUMMARY");
@@ -268,6 +409,22 @@ public class BankStatementParser {
         }
 
         return details;
+    }
+
+
+    public static BankStatement createDatedBankStatement(Path filePath, Bank bank) {
+
+        String fullText = extractText(filePath);
+        LocalDate statementDate = parseStatementDate(fullText, bank);
+        LocalDate dueDate = parseDueDate(fullText, bank);
+        
+        String transactionData = parseData(fullText, bank);
+        BankStatement bs = processData(transactionData, bank);
+
+        bs.setStatementDate(statementDate);
+        bs.setDueDate(dueDate);
+
+        return bs;
     }
 
 

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import kpes.finapp.service.BankStatementParser.Bank;
 
 import static kpes.finapp.service.BankStatementParser.extractText;
-import static kpes.finapp.service.BankStatementParser.getData;
+import static kpes.finapp.service.BankStatementParser.parseData;
 import static kpes.finapp.service.BankStatementParser.processData;
 
 public class BankStatementParserTest {
@@ -47,20 +47,20 @@ public class BankStatementParserTest {
     @Test
     void testNonEmptyPDFGetData() {
         Path pdfFile = Paths.get(pdfPath);
-        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        String txnList = parseData(extractText(pdfFile), Bank.BPICC);
         assertFalse(txnList.isEmpty() || txnList.isBlank());
     }
 
     // getData throws an AssertionError for empty String argument
     @Test
     void testEmptyPDFGetData() {
-        assertThrows(AssertionError.class,() -> getData(""));
+        assertThrows(AssertionError.class,() -> parseData(""));
     }
 
     // getData throws an AssertionError for invalid PDF content
     @Test
     void testInvalidFormatGetData() {
-        assertThrows(AssertionError.class,() -> getData("Something"));
+        assertThrows(AssertionError.class,() -> parseData("Something"));
     }
 
 
@@ -68,7 +68,7 @@ public class BankStatementParserTest {
     @Test
     void testValidBankStatementBPICCProcessData() {
         Path pdfFile = Paths.get(pdfPath);
-        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        String txnList = parseData(extractText(pdfFile), Bank.BPICC);
         assertInstanceOf(BankStatement.class, processData(txnList, Bank.BPICC));
     }
 
@@ -76,7 +76,7 @@ public class BankStatementParserTest {
     @Test
     void testNonEmptySummaryBPICCProcessData() {
         Path pdfFile = Paths.get(pdfPath);
-        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        String txnList = parseData(extractText(pdfFile), Bank.BPICC);
         BankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(!bs.getSummary().isEmpty());
     }
@@ -85,7 +85,7 @@ public class BankStatementParserTest {
     @Test
     void testSummaryForNoTxnBPICCProcessData() {
         Path pdfFile = Paths.get(noTransactionStatement);
-        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        String txnList = parseData(extractText(pdfFile), Bank.BPICC);
         BankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(!bs.getSummary().isEmpty());
     }
@@ -94,7 +94,7 @@ public class BankStatementParserTest {
     @Test
     void testNonEmptyDetailsBPICCProcessData() {
         Path pdfFile = Paths.get(pdfPath);
-        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        String txnList = parseData(extractText(pdfFile), Bank.BPICC);
         BankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(!bs.getDetails().isEmpty());
     }
@@ -103,7 +103,7 @@ public class BankStatementParserTest {
     @Test
     void testEmptyDetailsBPICCProcessData() {
         Path pdfFile = Paths.get(noTransactionStatement);
-        String txnList = getData(extractText(pdfFile), Bank.BPICC);
+        String txnList = parseData(extractText(pdfFile), Bank.BPICC);
         BankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(bs.getDetails().isEmpty());
     }
