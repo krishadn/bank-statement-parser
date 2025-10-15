@@ -66,9 +66,11 @@ public class BankStatementParser {
      */
     public static LocalDate parseStatementDate(String fullText, Bank bank) {
         String dateString = "";
+        String pattern = "";
         switch (bank) {
             case BPICC:
                 dateString = parseDateBPI(fullText, DateType.STATEMENT);
+                pattern = "MMMMdd,yyyy";
             case GCASH:
                 // TODO: for next iteration
 
@@ -77,17 +79,7 @@ public class BankStatementParser {
                 break;
         }
 
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMMdd,yyyy");
-            LocalDate date = LocalDate.parse(dateString, formatter);
-            return date;
-        }
-        catch (DateTimeParseException e) {
-            e.printStackTrace();
-            // TODO handle exception
-        }
-
-        return null;
+        return formatDate(dateString, pattern);
 
     }
 
@@ -108,9 +100,11 @@ public class BankStatementParser {
      */
     public static LocalDate parseDueDate(String fullText, Bank bank) {
         String dateString = "";
+        String pattern = "";
         switch (bank) {
             case BPICC:
                 dateString = parseDateBPI(fullText, DateType.DUE);
+                pattern = "MMMMdd,yyyy";
             case GCASH:
                 // TODO: for next iteration
 
@@ -119,17 +113,7 @@ public class BankStatementParser {
                 break;
         }
 
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMMdd,yyyy");
-            LocalDate date = LocalDate.parse(dateString, formatter);
-            return date;
-        }
-        catch (DateTimeParseException e) {
-            e.printStackTrace();
-            // TODO handle exception
-        }
-
-        return null;
+        return formatDate(dateString, pattern);
         
     }
 
@@ -140,6 +124,26 @@ public class BankStatementParser {
      */
     public static LocalDate parseDueDate(String fullText) {
         return parseDueDate(fullText, Bank.BPICC);
+    }
+
+    /**
+     * Convert String into a LocalDate object
+     * @param dateString date to be converted
+     * @param pattern format of the dateString
+     * @return {@link LocalDate} representing the date
+     */
+    private static LocalDate formatDate(String dateString, String pattern) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+            LocalDate date = LocalDate.parse(dateString, formatter);
+            return date;
+        }
+        catch (DateTimeParseException e) {
+            e.printStackTrace();
+            // TODO handle exception
+        }
+
+        return null;
     }
 
     /**
