@@ -1,7 +1,11 @@
 package kpes.finapp.service;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
@@ -19,9 +23,19 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
+ * Methods that will help parse Bank Statements in PDF format
+ * 
  * @author Krizzia Santillan
+ * @since 1.0
  */
 public class BankStatementParser {
 
@@ -29,8 +43,17 @@ public class BankStatementParser {
      * Supported bank statements
      */
     public enum Bank {
-        BPICC,
-        GCASH
+        BPICC ("BPICC"),
+        GCASH ("GCASH");
+
+        private final String name;
+        Bank(String name) {
+            this.name = name;
+        }
+
+        String getName() {
+            return name;
+        } 
     }
 
     private enum DateType {
@@ -415,7 +438,12 @@ public class BankStatementParser {
         return details;
     }
 
-
+    /**
+     * Creates a {@link BankStatement} with statement date and due date. Cases that would usually use this is a credit card statement
+     * @param filePath path to the bank statement pdf file
+     * @param bank bank any of the supported bank statements {@link Bank} that has statement date and due date
+     * @return {@link BankStatement} with statement date and due date
+     */
     public static BankStatement createDatedBankStatement(Path filePath, Bank bank) {
 
         String fullText = extractText(filePath);
@@ -431,14 +459,144 @@ public class BankStatementParser {
         return bs;
     }
 
+    /**
+     * 
+     * @param path {@link Path} object relative to the user's home directory where the file will be saved 
+     * @param bs
+     */
+    public static void saveBankStatementToXlsx(Path path, BankStatement bs){
 
-    public static void saveBankStatementToExcel(BankStatement bs){
+        Workbook wb = new XSSFWorkbook();
+        Sheet summarySheet = wb.createSheet("Summary");
+        Sheet detailsSheet = wb.createSheet("Transactions");
 
-        // TODO
+        populateSummarySheet(summarySheet, bs);
+        populateDetailsSheet(detailsSheet, bs.getDetails());
+ 
+        try (OutputStream fileOut = Files.newOutputStream(getCompletePath(path), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {            
+            wb.write(fileOut);
+            wb.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
 
+    private static void populateSummarySheet(Sheet sheet, BankStatement bs) {
+        String fontName = "Arial Narrow";
+        int currentRow = 0;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+
+        // header
+        Font headerFont = sheet.getWorkbook().createFont();
+        headerFont.setFontHeightInPoints((short) 32);
+        headerFont.setFontName(fontName);
+        CellStyle headerStyle = sheet.getWorkbook().createCellStyle();
+        headerStyle.setFont(headerFont);
+        Cell headerCell = sheet.createRow(currentRow++).createCell(0);
+        headerCell.setCellValue("SUMMARY");
+        headerCell.setCellStyle(headerStyle);
+
+        // general style
+        Font generalFont = sheet.getWorkbook().createFont();
+        generalFont.setFontHeightInPoints((short) 11);
+        generalFont.setFontName(fontName);
+        CellStyle generalStyle = sheet.getWorkbook().createCellStyle();
+        generalStyle.setFont(generalFont);
+
+        // bank and type
+        Row bankTypeRow = sheet.createRow(currentRow++);
+        bankTypeRow.createCell(0).setCellValue("Bank Statement Type");
+        bankTypeRow.createCell(1).setCellValue(bs.getBankAndType().getName());
+        bankTypeRow.getCell(0).setCellStyle(generalStyle);
+        bankTypeRow.getCell(1).setCellStyle(generalStyle);
+        
+        // statement date
+        if (bs.getStatementDate() != null) {
+            Row stmtDateRow = sheet.createRow(currentRow++);
+            stmtDateRow.createCell(0).setCellValue("Statement Date");            
+            stmtDateRow.createCell(1).setCellValue(bs.getStatementDate().format(formatter));
+            stmtDateRow.getCell(0).setCellStyle(generalStyle);
+            stmtDateRow.getCell(1).setCellStyle(generalStyle);
+
+        }
+        
+
+        // due date
+        if (bs.getDueDate() != null) {
+            Row dueDateRow = sheet.createRow(currentRow++);
+            dueDateRow.createCell(0).setCellValue("Due Date");
+            dueDateRow.createCell(1).setCellValue(bs.getDueDate().format(formatter));
+            dueDateRow.getCell(0).setCellStyle(generalStyle);
+            dueDateRow.getCell(1).setCellStyle(generalStyle);
+
+        }
+        
+        // total txn amount
+        Row totalRow = sheet.createRow(currentRow++);
+        totalRow.createCell(0).setCellValue("Total Amount of Transactions");
+        totalRow.createCell(1).setCellValue(bs.getTotalTxnAmount());
+        totalRow.getCell(0).setCellStyle(generalStyle);
+        totalRow.getCell(1).setCellStyle(generalStyle);
+
+
+        // summary
+        for (BankTransaction txn: bs.getSummary()) {
+            Row summaryRow = sheet.createRow(currentRow++);
+            summaryRow.createCell(0).setCellValue(txn.getDescription());
+            summaryRow.createCell(1).setCellValue(txn.getAmount());
+            summaryRow.getCell(0).setCellStyle(generalStyle);
+            summaryRow.getCell(1).setCellStyle(generalStyle);
+
+        }
+
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+
+
+    }
+
+
+    private static void populateDetailsSheet(Sheet sheet, List<BankTransaction> transactions) {
+
+        int currentRow = 0;
+
+        Font font = sheet.getWorkbook().createFont();
+        font.setFontHeightInPoints((short) 11);
+        font.setFontName("Arial Narrow");
+        CellStyle style = sheet.getWorkbook().createCellStyle();
+        style.setFont(font);
+
+        for (BankTransaction txn: transactions) {
+            Row summaryRow = sheet.createRow(currentRow++);
+            summaryRow.createCell(0).setCellValue(txn.getDescription());
+            summaryRow.createCell(1).setCellValue(txn.getAmount());
+            summaryRow.getCell(0).setCellStyle(style);
+            summaryRow.getCell(1).setCellStyle(style);
+
+        }
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+    }
 
     
+    private static Path getCompletePath(Path path) {
+        Path savePath = Paths.get(System.getProperty("user.home")).resolve(path);
+        Path parentDirPath = savePath.getParent();
+
+        try {
+            if (Files.notExists(parentDirPath)) {
+                Files.createDirectories(parentDirPath);
+            }
+            return savePath;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
 }

@@ -11,10 +11,29 @@ public class BankStatement {
     private List<BankTransaction> summary;
     private List<BankTransaction> details;
     private float totalTxnAmount;
+
+    /**
+     * Cut-off date of the statement, if applicable
+     */
     private LocalDate statementDate;
+
+    /**
+     * Date when payment is due for credit account type
+     */
     private LocalDate dueDate;
 
-
+    /**
+     * Creates a BankStatement object without statement date and due date.
+     * The total amount of transactions in the statement is summarized:
+     * <ul> 
+     *  <li> Balance due for credit account </li>
+     *  <li> Net debit/credit for savings/checking </li>
+     * </ul>
+     * which can be obtained by using {@link #getTotalTxnAmount} method
+     * @param bankAndType any type supported as enumerated in {@link Bank}
+     * @param summary transaction summary with beginning balance, transaction summary, and ending balance
+     * @param details transaction listing
+     */
     public BankStatement(Bank bankAndType, 
                             List<BankTransaction> summary, 
                             List<BankTransaction> details) {

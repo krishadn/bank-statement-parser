@@ -5,7 +5,12 @@ public class BankTransaction {
     private String description;
     private float amount;
 
-
+    /**
+     * Represents one transaction in a bank statement.
+     * This can also be a beginning balance, transaction type summary, or ending balance for summarization
+     * @param description describes the transation (can be beginning balance, ending balance, or transaction type summary)
+     * @param amount amount of the transaction (or the summarized amount)
+     */
     public BankTransaction(String description, float amount){
         this.description = description;
         this.amount = amount;
