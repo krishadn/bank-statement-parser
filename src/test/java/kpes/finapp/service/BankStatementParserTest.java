@@ -69,7 +69,7 @@ public class BankStatementParserTest {
     void testValidBankStatementBPICCProcessData() {
         Path pdfFile = Paths.get(pdfPath);
         String txnList = parseData(extractText(pdfFile), Bank.BPICC);
-        assertInstanceOf(BankStatement.class, processData(txnList, Bank.BPICC));
+        assertInstanceOf(OldBankStatement.class, processData(txnList, Bank.BPICC));
     }
 
     // processData returns a BankStatement with populated list of summarized data
@@ -77,7 +77,7 @@ public class BankStatementParserTest {
     void testNonEmptySummaryBPICCProcessData() {
         Path pdfFile = Paths.get(pdfPath);
         String txnList = parseData(extractText(pdfFile), Bank.BPICC);
-        BankStatement bs = processData(txnList, Bank.BPICC);
+        OldBankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(!bs.getSummary().isEmpty());
     }
 
@@ -86,7 +86,7 @@ public class BankStatementParserTest {
     void testSummaryForNoTxnBPICCProcessData() {
         Path pdfFile = Paths.get(noTransactionStatement);
         String txnList = parseData(extractText(pdfFile), Bank.BPICC);
-        BankStatement bs = processData(txnList, Bank.BPICC);
+        OldBankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(!bs.getSummary().isEmpty());
     }
 
@@ -95,7 +95,7 @@ public class BankStatementParserTest {
     void testNonEmptyDetailsBPICCProcessData() {
         Path pdfFile = Paths.get(pdfPath);
         String txnList = parseData(extractText(pdfFile), Bank.BPICC);
-        BankStatement bs = processData(txnList, Bank.BPICC);
+        OldBankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(!bs.getDetails().isEmpty());
     }
 
@@ -104,7 +104,7 @@ public class BankStatementParserTest {
     void testEmptyDetailsBPICCProcessData() {
         Path pdfFile = Paths.get(noTransactionStatement);
         String txnList = parseData(extractText(pdfFile), Bank.BPICC);
-        BankStatement bs = processData(txnList, Bank.BPICC);
+        OldBankStatement bs = processData(txnList, Bank.BPICC);
         assertTrue(bs.getDetails().isEmpty());
     }
 

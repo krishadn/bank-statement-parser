@@ -31,7 +31,7 @@ public class App {
         // BankStatement bs = processData(txtList, Bank.BPICC);
 
 
-        BankStatement bs1 = createDatedBankStatement(pdfFile, Bank.BPICC);
+        OldBankStatement bs1 = createDatedBankStatement(pdfFile, Bank.BPICC);
 
         System.out.println(bs1);
         Path filePath = Paths.get("BankStatements/sample.xlsx");

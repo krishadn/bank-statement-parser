@@ -1,6 +1,6 @@
 package kpes.finapp.service;
 
-public class BankTransaction {
+public class OldBankTransaction {
 
     private String description;
     private float amount;
@@ -11,7 +11,7 @@ public class BankTransaction {
      * @param description describes the transation (can be beginning balance, ending balance, or transaction type summary)
      * @param amount amount of the transaction (or the summarized amount)
      */
-    public BankTransaction(String description, float amount){
+    public OldBankTransaction(String description, float amount){
         this.description = description;
         this.amount = amount;
     }

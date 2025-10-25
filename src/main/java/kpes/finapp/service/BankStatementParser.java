@@ -46,13 +46,13 @@ public class BankStatementParser {
         BPICC ("BPICC"),
         GCASH ("GCASH");
 
-        private final String name;
-        Bank(String name) {
-            this.name = name;
+        private final String label;
+        Bank(String label) {
+            this.label = label;
         }
 
-        String getName() {
-            return name;
+        String getLabel() {
+            return label;
         } 
     }
 
@@ -303,12 +303,12 @@ public class BankStatementParser {
 
 
     /**
-     * Create a {@link BankStatement} object representation for the bank statement
+     * Create a {@link OldBankStatement} object representation for the bank statement
      * @param data clean text data from parsed bank statement pdf
      * @param bank any of the supported bank statements {@link #Bank}
-     * @return {@link BankStatement}
+     * @return {@link OldBankStatement}
      */
-    public static BankStatement processData(String data, Bank bank){
+    public static OldBankStatement processData(String data, Bank bank){
         switch (bank) {
             case BPICC:
                 return processBPICC(data);
@@ -322,24 +322,24 @@ public class BankStatementParser {
 
 
     /**
-     * Create a {@link BankStatement} object representation for BPICC bank statement
+     * Create a {@link OldBankStatement} object representation for BPICC bank statement
      * @param data clean text data from parsed bank statement pdf 
-     * @return {@link BankStatement}
+     * @return {@link OldBankStatement}
      */
-    private static BankStatement processBPICC(String data) {
+    private static OldBankStatement processBPICC(String data) {
         String[] dataParts = splitBPICC(data);
-        List<BankTransaction> summary = parseSummaryBPICC(dataParts[1]);
+        List<OldBankTransaction> summary = parseSummaryBPICC(dataParts[1]);
 
-        List<BankTransaction> details;
+        List<OldBankTransaction> details;
 
         // if there is no transactions, array will only have 2 elements
         if (dataParts.length == 3) {
             details = parseDetailsBPICC(dataParts[2]);
         } else {
-            details = new ArrayList<BankTransaction>();
+            details = new ArrayList<OldBankTransaction>();
         }
 
-        BankStatement bs = new BankStatement(Bank.BPICC, summary, details);
+        OldBankStatement bs = new OldBankStatement(Bank.BPICC, summary, details);
         return bs;
     }
 
@@ -364,14 +364,14 @@ public class BankStatementParser {
 
 
     /**
-     * Parse summary data to create a {@link BankTransaction} objects
+     * Parse summary data to create a {@link OldBankTransaction} objects
      * and store the objects in a List
      * @param summaryData summary of the month's transactions
-     * @return list of {@link BankTransaction}
+     * @return list of {@link OldBankTransaction}
      */
-    private static ArrayList<BankTransaction> parseSummaryBPICC(String summaryData) {
+    private static ArrayList<OldBankTransaction> parseSummaryBPICC(String summaryData) {
 
-        ArrayList<BankTransaction> summary = new ArrayList<BankTransaction>();
+        ArrayList<OldBankTransaction> summary = new ArrayList<OldBankTransaction>();
 
         String txnRegex = "(.*\\D{2})(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
         Pattern p = Pattern.compile(txnRegex);
@@ -384,7 +384,7 @@ public class BankStatementParser {
                 NumberFormat format = NumberFormat.getInstance(Locale.US);
                 Number parsedAmount = format.parse(matcher.group(2));
                 float amount = parsedAmount.floatValue();
-                BankTransaction txn = new BankTransaction(desc, amount);
+                OldBankTransaction txn = new OldBankTransaction(desc, amount);
                 summary.add(txn);
 
             } catch (ParseException e) {
@@ -401,15 +401,15 @@ public class BankStatementParser {
 
 
     /**
-     * Parse transaction details to create a {@link BankTransaction} objects
+     * Parse transaction details to create a {@link OldBankTransaction} objects
      * and store the objects in a List
      * @param detailsData transaction listing which may include SIP details
-     * @return list of {@link BankTransaction}
+     * @return list of {@link OldBankTransaction}
      * Note: there is no support yet for SIP details
      */
-    private static ArrayList<BankTransaction> parseDetailsBPICC(String detailsData) {
+    private static ArrayList<OldBankTransaction> parseDetailsBPICC(String detailsData) {
 
-        ArrayList<BankTransaction> details = new ArrayList<BankTransaction>();
+        ArrayList<OldBankTransaction> details = new ArrayList<OldBankTransaction>();
         String[] parts = detailsData.split("S.I.P.BALANCESUMMARY");
 
         String txnRegex = "(.*\\D{2}(\\d{2}/\\d{2})?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
@@ -423,7 +423,7 @@ public class BankStatementParser {
                 NumberFormat format = NumberFormat.getInstance(Locale.US);
                 Number parsedAmount = format.parse(matcher.group(3));
                 float amount = parsedAmount.floatValue();
-                BankTransaction txn = new BankTransaction(desc, amount);
+                OldBankTransaction txn = new OldBankTransaction(desc, amount);
                 details.add(txn);
 
             } catch (ParseException e) {
@@ -439,19 +439,19 @@ public class BankStatementParser {
     }
 
     /**
-     * Creates a {@link BankStatement} with statement date and due date. Cases that would usually use this is a credit card statement
+     * Creates a {@link OldBankStatement} with statement date and due date. Cases that would usually use this is a credit card statement
      * @param filePath path to the bank statement pdf file
      * @param bank bank any of the supported bank statements {@link Bank} that has statement date and due date
-     * @return {@link BankStatement} with statement date and due date
+     * @return {@link OldBankStatement} with statement date and due date
      */
-    public static BankStatement createDatedBankStatement(Path filePath, Bank bank) {
+    public static OldBankStatement createDatedBankStatement(Path filePath, Bank bank) {
 
         String fullText = extractText(filePath);
         LocalDate statementDate = parseStatementDate(fullText, bank);
         LocalDate dueDate = parseDueDate(fullText, bank);
         
         String transactionData = parseData(fullText, bank);
-        BankStatement bs = processData(transactionData, bank);
+        OldBankStatement bs = processData(transactionData, bank);
 
         bs.setStatementDate(statementDate);
         bs.setDueDate(dueDate);
@@ -464,7 +464,7 @@ public class BankStatementParser {
      * @param path {@link Path} object relative to the user's home directory where the file will be saved 
      * @param bs
      */
-    public static void saveBankStatementToXlsx(Path path, BankStatement bs){
+    public static void saveBankStatementToXlsx(Path path, OldBankStatement bs){
 
         Workbook wb = new XSSFWorkbook();
         Sheet summarySheet = wb.createSheet("Summary");
@@ -483,7 +483,7 @@ public class BankStatementParser {
     }
 
 
-    private static void populateSummarySheet(Sheet sheet, BankStatement bs) {
+    private static void populateSummarySheet(Sheet sheet, OldBankStatement bs) {
         String fontName = "Arial Narrow";
         int currentRow = 0;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
@@ -508,7 +508,7 @@ public class BankStatementParser {
         // bank and type
         Row bankTypeRow = sheet.createRow(currentRow++);
         bankTypeRow.createCell(0).setCellValue("Bank Statement Type");
-        bankTypeRow.createCell(1).setCellValue(bs.getBankAndType().getName());
+        bankTypeRow.createCell(1).setCellValue(bs.getBankAndType().getLabel());
         bankTypeRow.getCell(0).setCellStyle(generalStyle);
         bankTypeRow.getCell(1).setCellStyle(generalStyle);
         
@@ -542,7 +542,7 @@ public class BankStatementParser {
 
 
         // summary
-        for (BankTransaction txn: bs.getSummary()) {
+        for (OldBankTransaction txn: bs.getSummary()) {
             Row summaryRow = sheet.createRow(currentRow++);
             summaryRow.createCell(0).setCellValue(txn.getDescription());
             summaryRow.createCell(1).setCellValue(txn.getAmount());
@@ -559,7 +559,7 @@ public class BankStatementParser {
     }
 
 
-    private static void populateDetailsSheet(Sheet sheet, List<BankTransaction> transactions) {
+    private static void populateDetailsSheet(Sheet sheet, List<OldBankTransaction> transactions) {
 
         int currentRow = 0;
 
@@ -569,7 +569,7 @@ public class BankStatementParser {
         CellStyle style = sheet.getWorkbook().createCellStyle();
         style.setFont(font);
 
-        for (BankTransaction txn: transactions) {
+        for (OldBankTransaction txn: transactions) {
             Row summaryRow = sheet.createRow(currentRow++);
             summaryRow.createCell(0).setCellValue(txn.getDescription());
             summaryRow.createCell(1).setCellValue(txn.getAmount());
