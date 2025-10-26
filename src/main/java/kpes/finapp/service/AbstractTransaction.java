@@ -22,7 +22,7 @@ public abstract class AbstractTransaction {
 
     }
 
-    // getters and setters
+    // getters
     public LocalDate getTransactionDate() {
         return transactionDate;
     }
@@ -34,19 +34,6 @@ public abstract class AbstractTransaction {
     public float getAmount() {
         return amount;
     }
-
-    public void setTransactionDate(LocalDate transactionDate) {
-        this.transactionDate = transactionDate;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setAmount(float amount) {
-        this.amount = amount;
-    }
-
 
     // abstract method/s
     @Override

@@ -34,42 +34,6 @@ public class SavingsTransactionTest {
 
 
     @Test
-    void testSettersWithGetters() {
-
-        // value before
-        LocalDate date = null;
-        String description = "";
-        float amount = 0;
-        String ref = "";
-
-        SavingsTransaction st = new SavingsTransaction(date, description, amount, ref);
-
-        // set new values with setters
-        LocalDate newDate = LocalDate.now();
-        String newDescription = "Sample Description";
-        float newAmount = 1000;
-        String newRef = "REF123";
-
-        st.setTransactionDate(newDate);
-        st.setDescription(newDescription);
-        st.setAmount(newAmount);
-        st.setReferenceNum(newRef);
-
-        // get new values set
-        LocalDate dateSet = st.getTransactionDate();
-        String descriptionSet = st.getDescription();
-        float amountSet = st.getAmount();
-        String refSet = st.getReferenceNum();
-
-        assertEquals(newDate, dateSet);
-        assertEquals(newDescription, descriptionSet);
-        assertEquals(newAmount, amountSet);
-        assertEquals(newRef, refSet);
-
-    }
-
-
-    @Test
     void testToString() {
 
         // required fields

@@ -34,41 +34,6 @@ public class CreditTransactionTest {
 
 
     @Test
-    void testSettersWithGetters() {
-
-        // value before
-        LocalDate date = null;
-        String description = "";
-        float amount = 0;
-
-        CreditTransaction ct = new CreditTransaction(date, description, amount, date);
-
-        // set new values with setters
-        LocalDate newDate = LocalDate.now();
-        String newDescription = "Sample Description";
-        float newAmount = 1000;
-        LocalDate newPostDate = LocalDate.now().minusDays((long)2);
-
-        ct.setTransactionDate(newDate);
-        ct.setDescription(newDescription);
-        ct.setAmount(newAmount);
-        ct.setPostDate(newPostDate);
-
-        // get new values set
-        LocalDate dateSet = ct.getTransactionDate();
-        String descriptionSet = ct.getDescription();
-        float amountSet = ct.getAmount();
-        LocalDate postDateSet = ct.getPostDate();
-
-        assertEquals(newDate, dateSet);
-        assertEquals(newDescription, descriptionSet);
-        assertEquals(newAmount, amountSet);
-        assertEquals(newPostDate, postDateSet);
-
-    }
-
-
-     @Test
     void testToString() {
 
        // required fields
