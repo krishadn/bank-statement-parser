@@ -8,18 +8,20 @@ import java.util.List;
  */
 public abstract class AbstractStatement {
     
+    // summary
     protected float beginningBalance;
     protected float totalCredits;
     protected float totalDebits;
     protected float endingBalance;
 
+    // details
     protected List<AbstractTransaction> transactions;
 
     // constructor
     protected AbstractStatement(float beginningBalance, float totalCredits, float totalDebits,
                                     float endingBalance, List<AbstractTransaction> transactions) {
 
-        boolean matchFlag = doesTransactionsMatchSummary(beginningBalance, totalCredits, totalDebits, endingBalance, transactions);
+        boolean matchFlag = doTransactionsMatchSummary(beginningBalance, totalCredits, totalDebits, endingBalance, transactions);
 
         if (!matchFlag) throw new IllegalArgumentException("Debits and credits in transactions have discrepancies with summary");
 
@@ -55,7 +57,7 @@ public abstract class AbstractStatement {
     // abstract methods
     @Override
     public abstract String toString();
-    protected abstract Boolean doesTransactionsMatchSummary(float beginningBalance, float totalCredits, float totalDebits,
+    protected abstract Boolean doTransactionsMatchSummary(float beginningBalance, float totalCredits, float totalDebits,
                                                                 float endingBalance, List<AbstractTransaction> transactions);
 
 }
