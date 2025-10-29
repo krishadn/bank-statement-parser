@@ -5,7 +5,7 @@ import java.io.IOException;
 public interface ITextExtractor {
 
     /**
-     * Interface for text extractor from an external file
+     * Text extractor from an external file
      * @param forExtraction external file from where the text will be extracted
      * @param credentials to use for opening encrypted files
      * @return text extracted from the file

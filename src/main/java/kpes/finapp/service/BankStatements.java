@@ -11,6 +11,10 @@ import java.util.regex.Pattern;
  */
 public final class BankStatements {
 
+    private BankStatements() {
+        throw new UnsupportedOperationException("This is a helper class and cannot be instantiated.");
+    };
+
     /**
      * Helper method to extract text from an ENCRYPTED bank statement, providing checks for validity, existence of file,
      * and file type. It also checks whether the pdf is a bank statement by checking against the {@code pattern}
@@ -29,16 +33,15 @@ public final class BankStatements {
 
         try {
             result = extractor.extractText(path, pw);
+            if (!pattern.matcher(result).find()) throw new IllegalArgumentException("File is not a Bank Statement");
+            return result;
 
         } catch (IOException e) {
             System.out.println("Possible parsing error or decryption error");
             e.printStackTrace();
-            return "No Text Extracted";
+            return "";
         }
 
-        if (!pattern.matcher(result).find()) throw new IllegalArgumentException("File is not a Bank Statement");
-
-        return result;
     }
 
 

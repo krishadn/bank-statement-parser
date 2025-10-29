@@ -21,7 +21,7 @@ public class BankStatementsTest {
         
         // Arrange
         Path p = Paths.get("nonexistent.pdf");
-        ITextExtractor mockExtractor = mock(BSTextExtractor.class);
+        ITextExtractor mockExtractor = mock(PDFBoxExtractor.class);
         Pattern pattern = Pattern.compile("");
 
         // Act and Assert
@@ -35,7 +35,7 @@ public class BankStatementsTest {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".txt");
-        ITextExtractor mockExtractor = mock(BSTextExtractor.class);
+        ITextExtractor mockExtractor = mock(PDFBoxExtractor.class);
         Pattern pattern = Pattern.compile("");
 
         // Act and Assert
@@ -55,7 +55,7 @@ public class BankStatementsTest {
         String pwd = "";
         Pattern pattern = Pattern.compile("Some Pattern", Pattern.CASE_INSENSITIVE);
 
-        ITextExtractor mockExtractor = mock(BSTextExtractor.class);
+        ITextExtractor mockExtractor = mock(PDFBoxExtractor.class);
         when(mockExtractor.extractText(p, pwd)).thenReturn("dummy text");
 
         // Act and Assert
@@ -74,14 +74,14 @@ public class BankStatementsTest {
         String pwd = "";
         Pattern pattern = Pattern.compile("");
 
-        ITextExtractor mockExtractor = mock(BSTextExtractor.class);
+        ITextExtractor mockExtractor = mock(PDFBoxExtractor.class);
         when(mockExtractor.extractText(p, pwd)).thenThrow(IOException.class);
 
         // Act
         String result = BankStatements.extractStatementText(p, mockExtractor, pattern);
 
         // Assert
-        assertEquals("No Text Extracted", result);
+        assertTrue(result.isEmpty());
 
         // Clean up
         Files.delete(p);
@@ -97,7 +97,7 @@ public class BankStatementsTest {
         Pattern pattern = Pattern.compile("bank statement", Pattern.CASE_INSENSITIVE);
         String expected = "This is a bank statement";
 
-        ITextExtractor mockExtractor = mock(BSTextExtractor.class);
+        ITextExtractor mockExtractor = mock(PDFBoxExtractor.class);
         when(mockExtractor.extractText(p, pwd)).thenReturn(expected);
 
         // Act
