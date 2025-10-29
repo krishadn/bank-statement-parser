@@ -116,6 +116,9 @@ public class PDFBoxExtractorTest {
         // Assert
         assertEquals(expected, result);
 
+        // Clean up
+        Files.delete(filePath);
+
     }
 
 
