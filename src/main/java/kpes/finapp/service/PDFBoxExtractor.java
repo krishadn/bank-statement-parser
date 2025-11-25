@@ -20,6 +20,7 @@ public class PDFBoxExtractor implements ITextExtractor{
         String text = "";
 
         try {
+            // TODO check if needs to close loader / file connection
             PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(path), pwd);
             PDFTextStripper pdfStripper = new PDFTextStripper();
             pdfStripper.setSortByPosition(true);

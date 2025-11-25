@@ -13,7 +13,7 @@ public final class BankStatements {
 
     private BankStatements() {
         throw new UnsupportedOperationException("This is a helper class and cannot be instantiated.");
-    };
+    }
 
     /**
      * Helper method to extract text from an ENCRYPTED bank statement, providing checks for validity, existence of file,
