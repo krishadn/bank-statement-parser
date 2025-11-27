@@ -14,7 +14,7 @@ public class SavingsTransactionTest {
         // required fields
         LocalDate date = LocalDate.now();
         String description = "Sample Description";
-        float amount = 1000;
+        double amount = 1000;
         String ref = "REF02145";
 
         SavingsTransaction st = new SavingsTransaction(date, description, amount, ref);
@@ -22,7 +22,7 @@ public class SavingsTransactionTest {
         // initialized fields
         LocalDate dateInit = st.getTransactionDate();
         String descriptionInit = st.getDescription();
-        float amountInit = st.getAmount();
+        double amountInit = st.getAmount();
         String refInit = st.getReferenceNum();
 
         assertEquals(date, dateInit);
@@ -39,7 +39,7 @@ public class SavingsTransactionTest {
         // required fields
         LocalDate date = LocalDate.now();
         String description = "Sample Description";
-        float amount = 1000;
+        double amount = 1000;
         String ref = "REF02145";
 
         SavingsTransaction st = new SavingsTransaction(date, description, amount, ref);

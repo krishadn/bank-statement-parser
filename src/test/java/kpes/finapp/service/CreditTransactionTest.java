@@ -14,7 +14,7 @@ public class CreditTransactionTest {
         // required fields
         LocalDate date = LocalDate.now();
         String description = "Sample Description";
-        float amount = 1000;
+        double amount = 1000;
         LocalDate postDate = LocalDate.now().minusDays((long)2);
 
         CreditTransaction ct = new CreditTransaction(date, description, amount, postDate);
@@ -22,7 +22,7 @@ public class CreditTransactionTest {
         // initialized fields
         LocalDate dateInit = ct.getTransactionDate();
         String descriptionInit = ct.getDescription();
-        float amountInit = ct.getAmount();
+        double amountInit = ct.getAmount();
         LocalDate postDateInit = ct.getPostDate();
 
         assertEquals(date, dateInit);
@@ -39,7 +39,7 @@ public class CreditTransactionTest {
        // required fields
         LocalDate date = LocalDate.now();
         String description = "Sample Description";
-        float amount = 1000;
+        double amount = 1000;
         LocalDate postDate = LocalDate.now().minusDays((long)2);
 
         CreditTransaction ct = new CreditTransaction(date, description, amount, postDate);

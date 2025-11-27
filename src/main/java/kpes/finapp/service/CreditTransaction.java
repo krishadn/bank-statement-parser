@@ -8,7 +8,7 @@ public class CreditTransaction extends AbstractTransaction {
 
     public CreditTransaction(LocalDate transactionDate, 
                                     String description,
-                                    float amount,
+                                    double amount,
                                     LocalDate postDate) {
 
         super(transactionDate, description, amount);
@@ -18,10 +18,6 @@ public class CreditTransaction extends AbstractTransaction {
 
     public LocalDate getPostDate() {
         return postDate;
-    }
-
-    public void setPostDate(LocalDate postDate) {
-        this.postDate = postDate;
     }
 
     @Override

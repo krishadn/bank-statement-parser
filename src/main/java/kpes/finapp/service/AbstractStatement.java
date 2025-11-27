@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
  */
 public abstract class AbstractStatement implements SSExportable {
 
+    /* Fields */
+
     // regular expression to use for checking if text extracted is from a valid bank statement
     protected Pattern pattern;
     
@@ -31,6 +33,7 @@ public abstract class AbstractStatement implements SSExportable {
     // details
     protected List<AbstractTransaction> transactions;
 
+
     /**
      * Constructor initializing field values
      */
@@ -38,11 +41,23 @@ public abstract class AbstractStatement implements SSExportable {
         rawString = "";
         beginningBalance = 0;
         totalCredits = 0;
+        totalDebits = 0;
         endingBalance = 0;
         transactions = new ArrayList<>();
-        pattern = setPattern();  
+        pattern = createPattern();  
         parsed = false;
     }
+
+    /* Getters */
+
+    public String getRawString() {
+        return rawString;
+    }
+
+    public boolean isParsed() {
+        return parsed;
+    }
+
 
     /* Concrete Methods */
 
@@ -85,10 +100,39 @@ public abstract class AbstractStatement implements SSExportable {
         return extractStatementText(path, extractor, "");
     }
 
+
+
     /* Abstract Methods */
 
-    protected abstract Pattern setPattern();
+    /**
+     * Factory method to create a Pattern object used in {@link #extractStatementText(Path, ITextExtractor, String)} 
+     * to check if the extracted text is a valid bank statement.
+     * Pattern is specific to each concrete bank statement implementations.
+     * @return pattern that should exist in a valid bank statement 
+     */
+    protected abstract Pattern createPattern();
+
+    /**
+     * Parses the {@link #rawString} and employs validity checks before 
+     * populating the fields with parsed data. Updates parsed status to true
+     * if all necessary fields are populated and validity checks are all successful.
+     * 
+     * The implementation should use {@link #isBalanced()} and {@link #isTransactionComplete()}
+     * for the validity checks as a minimum.
+     */
     protected abstract void parseRawText();
+
+    /**
+     * Method used to validate if the summary fields ared balanced
+     * @return true if the summary is balanced, false otherwise
+     */
+    protected abstract boolean isBalanced();
+    
+    /**
+     * Method used to check transactions in the list against total credit and total debits
+     * @return true if the transactions include all credits and debits
+     */
+    protected abstract boolean isTransactionComplete();
 
 
 }

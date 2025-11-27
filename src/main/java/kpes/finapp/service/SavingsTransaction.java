@@ -8,7 +8,7 @@ public class SavingsTransaction extends AbstractTransaction {
 
     public SavingsTransaction(LocalDate transactionDate, 
                                     String description,
-                                    float amount,
+                                    double amount,
                                     String referenceNum) {
 
         super(transactionDate, description, amount);
@@ -18,10 +18,6 @@ public class SavingsTransaction extends AbstractTransaction {
 
     public String getReferenceNum() {
         return referenceNum;
-    }
-
-    public void setReferenceNum(String referenceNum) {
-        this.referenceNum = referenceNum;
     }
 
     @Override

@@ -10,12 +10,12 @@ public abstract class AbstractTransaction {
 
     protected LocalDate transactionDate;
     protected String description;
-    protected float amount;
+    protected double amount;
 
     // constructor
     protected AbstractTransaction(LocalDate transactionDate, 
                                     String description,
-                                    float amount) {
+                                    double amount) {
         this.transactionDate = transactionDate;
         this.description = description;
         this.amount = amount;
@@ -31,7 +31,7 @@ public abstract class AbstractTransaction {
         return description;
     }
 
-    public float getAmount() {
+    public double getAmount() {
         return amount;
     }
 

@@ -1,0 +1,264 @@
+package kpes.finapp.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class BPICreditStatementTest {
+
+    BPICreditStatement bpicc;
+    ITextExtractor mockExtractor;
+
+    @BeforeEach
+    void setUp() {
+        bpicc = new BPICreditStatement();
+        mockExtractor = mock(PDFBoxExtractor.class);
+    }
+
+    /* Tests for extractStatementText */
+    
+    @Test
+    void testExtractStatementTextCaseNonExisting() {
+        
+        // Arrange
+        Path p = Paths.get("nonexistent.pdf");
+
+        // Act and Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> bpicc.extractStatementText(p, mockExtractor));
+        assertTrue(exception.getMessage().contains("does not exist"));
+
+    }
+
+    @Test
+    void testExtractStatementTextCaseExistingNonPDFFile() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".txt");
+
+        // Act and Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> bpicc.extractStatementText(p, mockExtractor));
+        assertTrue(exception.getMessage().contains("is not a PDF file"));
+        
+        // Clean up
+        Files.delete(p);
+    }
+
+
+    @Test
+    void testExtractStatementTextCaseNotBankStatement() throws IOException {
+        
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        when(mockExtractor.extractText(p, pwd)).thenReturn("dummy text");
+
+        // Act and Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> bpicc.extractStatementText(p, mockExtractor));
+        assertTrue(exception.getMessage().contains("not a Bank Statement"));
+
+        // Clean up
+        Files.delete(p);
+    }
+
+    @Test
+    void testExtractStatementTextCaseIOException() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        when(mockExtractor.extractText(p, pwd)).thenThrow(IOException.class);
+
+        // Act
+        Boolean result = bpicc.extractStatementText(p, mockExtractor);
+
+        // Assert
+        assertFalse(result);
+
+        // Clean up
+        Files.delete(p);
+    }
+
+
+    @Test
+    void testExtractStatementTextCaseSuccess() throws IOException {
+        
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String expected = "<<other content>> Statement of Account <<other content>>";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(expected);
+
+        // Act
+        Boolean result = bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        assertTrue(result);
+        assertEquals(expected, bpicc.getRawString());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    
+    /* Tests for parseRawText */
+
+    @Test
+    void testParseRawTextCaseGeneral() throws IOException {
+
+        // post conditions to test
+        // IMPORTANT ensure all functions are called      
+
+        // Arrange
+        BPICreditStatement mockBpiCc = mock(BPICreditStatement.class);
+        doNothing().when(mockBpiCc).preprocessRawText();
+        doNothing().when(mockBpiCc).extractStatementDate();
+        doNothing().when(mockBpiCc).extractDueDate();
+        doNothing().when(mockBpiCc).extractMinAmtDue();
+        doNothing().when(mockBpiCc).extractPreviousBalance();
+        doNothing().when(mockBpiCc).extractTotalCredits();
+        doNothing().when(mockBpiCc).extractTotalDebits();
+        doNothing().when(mockBpiCc).extractTotalAmountDue();
+        doNothing().when(mockBpiCc).extractTransactionList();
+        when(mockBpiCc.isBalanced()).thenReturn(true);
+        when(mockBpiCc.isTransactionComplete()).thenReturn(true);
+        
+        doCallRealMethod().when(mockBpiCc).parseRawText();
+
+        // Act
+        mockBpiCc.parseRawText();
+
+        // Assert
+        verify(mockBpiCc, times(1)).preprocessRawText();
+        verify(mockBpiCc, times(1)).extractStatementDate();
+        verify(mockBpiCc, times(1)).extractDueDate();
+        verify(mockBpiCc, times(1)).extractMinAmtDue();
+        verify(mockBpiCc, times(1)).extractPreviousBalance();
+        verify(mockBpiCc, times(1)).extractTotalCredits();
+        verify(mockBpiCc, times(1)).extractTotalDebits();
+        verify(mockBpiCc, times(1)).extractTotalAmountDue();
+        verify(mockBpiCc, times(1)).extractTransactionList();
+        verify(mockBpiCc, times(1)).isBalanced();
+        verify(mockBpiCc, times(1)).isTransactionComplete();
+
+    }
+
+    @Test
+    void testParseRawTextCaseZeroBeginningNoTransactions() {
+
+        // post conditions to test
+        // IMPORTANT ensure all functions are called
+        // 1. parsed field should be true
+        // 2. begBal is zero
+        // 3. total credits is zero
+        // 4. total debits is zero
+        // 5. ending is zero
+        // 6. transaction list is empty
+        // 7. minAmtDue is zero
+        // 8. statement date and due date should not be equal
+        // 9. rawString is preprocessed
+
+    }
+
+    @Test
+    void testParseRawTextCaseWithBeginningAndTransactions() {
+
+        // post conditions to test
+        // IMPORTANT ensure all functions are called
+        // 1. parsed field should be true
+        // 2. begBal is equal to the amount in the raw text
+        // 3. total credits is equal to the amount in the raw text
+        // 4. total debits is equal to the amount in the raw text
+        // 5. ending is equal to the amount in the raw text
+        // 6. transaction list is not empty
+        // 7. minAmtDue is equal to the amount in the raw text
+        // 8. statement date and due date should not be equal, should be the same in the raw text
+        // 9. rawString is preprocessed
+
+    }
+
+
+    @Test
+    void testParseRawTextCaseStatementNotBalanced() {
+
+        // post conditions to test
+
+        // 1. parsed field is false
+        // 2. fields are cleared with the indicated value in clearFields
+        // 3. throws exception
+
+    }
+
+    
+    /* Tests for preprocessRawText */
+
+    @Test
+    void testPreprocessRawTextCaseRemovedAllSpaces() throws IOException {
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > ";
+        String expected = "<<othercontent>>StatementofAccount<<othercontent>>";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.preprocessRawText();
+
+        //Assert
+        assertEquals(expected, bpicc.getRawString());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+
+    /* Tests for extractStatementDate */
+
+    @Test
+    void testExtractStatementDateCasePatternFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " STATEMENTDATEOCTOBER30,2025 ";
+        LocalDate expected = LocalDate.of(2025, 10, 30);
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractStatementDate();
+
+        //Assert
+        assertEquals(expected, bpicc.getStatementDate());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractStatementDateCasePatternNotFound() {
+        
+    }
+
+
+}
