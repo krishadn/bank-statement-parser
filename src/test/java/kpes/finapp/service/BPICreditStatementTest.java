@@ -233,7 +233,7 @@ public class BPICreditStatementTest {
     /* Tests for extractStatementDate */
 
     @Test
-    void testExtractStatementDateCasePatternFound() throws IOException {
+    void testExtractStatementDateCasePatternFoundTwoDigitDate() throws IOException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
@@ -256,9 +256,147 @@ public class BPICreditStatementTest {
     }
 
     @Test
-    void testExtractStatementDateCasePatternNotFound() {
+    void testExtractStatementDateCasePatternFoundOneDigitDate() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " STATEMENTDATEOCTOBER4,2025 ";
+        LocalDate expected = LocalDate.of(2025, 10, 4);
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractStatementDate();
+
+        //Assert
+        assertEquals(expected, bpicc.getStatementDate());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractStatementDateCasePatternFoundOneDigitDateWithLeadingZero() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " STATEMENTDATEJANUARY04,2025 ";
+        LocalDate expected = LocalDate.of(2025, 1, 4);
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractStatementDate();
+
+        //Assert
+        assertEquals(expected, bpicc.getStatementDate());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractStatementDateCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        LocalDate expected = bpicc.getStatementDate();        
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractStatementDate());
+        assertTrue(exception.getMessage().contains("Statement Date"));
+        assertEquals(expected, bpicc.getStatementDate());
+        
+        // Clean up
+        Files.delete(p);
         
     }
+
+
+    /* Tests for extractDueDate */
+
+    @Test
+    void testExtractDueDateCasePatternFoundOneDigitDate() throws IOException {
+        
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " PAYMENTDUEDATENOVEMBER1,2025 ";
+        LocalDate expected = LocalDate.of(2025, 11, 1);
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractDueDate();
+
+        //Assert
+        assertEquals(expected, bpicc.getDueDate());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractDueDateCasePatternFoundTwoDigitDate() throws IOException {
+        
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " PAYMENTDUEDATENOVEMBER12,2025 ";
+        LocalDate expected = LocalDate.of(2025, 11, 12);
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractDueDate();
+
+        //Assert
+        assertEquals(expected, bpicc.getDueDate());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractDueDateCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        LocalDate expected = bpicc.getDueDate();
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractDueDate());
+        assertTrue(exception.getMessage().contains("Due Date"));
+        assertEquals(expected, bpicc.getDueDate());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
+
 
 
 }

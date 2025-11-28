@@ -33,6 +33,10 @@ public abstract class CreditStatement extends AbstractStatement {
         return statementDate;
     }
 
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
 
     /* Concrete Methods */
 
@@ -105,9 +109,23 @@ public abstract class CreditStatement extends AbstractStatement {
 
     /* Abstract Methods */
 
+    /**
+     * Preprocesses the {@link #rawString} into a ready state before parsing.
+     */
     protected abstract void preprocessRawText();
+
+    /**
+     * Extracts the Statement Date from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #statementDate} field.
+     */
     protected abstract void extractStatementDate();
+
+    /**
+     * Extracts the Due Date from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #dueDate} field.
+     */
     protected abstract void extractDueDate();
+    
     protected abstract void extractMinAmtDue();    
     protected abstract void extractPreviousBalance();
     protected abstract void extractTotalCredits();
