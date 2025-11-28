@@ -37,6 +37,9 @@ public abstract class CreditStatement extends AbstractStatement {
         return dueDate;
     }
 
+    public double getMinAmountDue() {
+        return minAmountDue;
+    }
 
     /* Concrete Methods */
 
@@ -126,7 +129,12 @@ public abstract class CreditStatement extends AbstractStatement {
      */
     protected abstract void extractDueDate();
     
-    protected abstract void extractMinAmtDue();    
+    /**
+     * Extracts the Minimum Amount Due from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #minAmountDue} field.
+     */
+    protected abstract void extractMinAmtDue();
+
     protected abstract void extractPreviousBalance();
     protected abstract void extractTotalCredits();
     protected abstract void extractTotalDebits();

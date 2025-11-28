@@ -50,10 +50,8 @@ public class BPICreditStatement extends CreditStatement {
         Pattern p = Pattern.compile(dateRegex);
         Matcher matcher = p.matcher(rawString);
 
-        String rawDate = "";
-
         if (matcher.find()) {
-            rawDate = matcher.group(1);
+            String rawDate = matcher.group(1);
             statementDate = formatDate(rawDate);
             return;
         }
@@ -75,10 +73,8 @@ public class BPICreditStatement extends CreditStatement {
         Pattern p = Pattern.compile(dateRegex);
         Matcher matcher = p.matcher(rawString);
 
-        String rawDate = "";
-
         if (matcher.find()) {
-            rawDate = matcher.group(1);
+            String rawDate = matcher.group(1);
             dueDate = formatDate(rawDate);
             return;
         }
@@ -103,11 +99,23 @@ public class BPICreditStatement extends CreditStatement {
         return LocalDate.parse(formattedDate, formatter);
     }    
 
-
+    /**
+     * {@inheritDoc}
+     * @throws IllegalStateException when the pattern for Minimum Amount Due is not found 
+     */
     @Override
     protected void extractMinAmtDue() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'extractMinAmtDue'");
+        String dateRegex = "MINIMUMAMOUNTDUE(\\d*\\.\\d\\d)";
+        Pattern p = Pattern.compile(dateRegex);
+        Matcher matcher = p.matcher(rawString);
+
+        if (matcher.find()) {
+            minAmountDue = Double.parseDouble(matcher.group(1));
+            return;
+        }
+
+        throw new IllegalStateException("Cannot find Minimum Amount Due from extracted text. Check updates in statement format");
+
     }
 
 

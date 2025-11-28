@@ -397,6 +397,55 @@ public class BPICreditStatementTest {
     }
 
 
+    /* Tests for extractMinAmtDue */
+
+    @Test
+    void testExtractMinAmtDueCasePatternFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " MINIMUMAMOUNTDUE850.00 ";
+        double expected = 850;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractMinAmtDue();
+
+        //Assert
+        assertEquals(expected, bpicc.getMinAmountDue());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+
+    @Test
+    void testExtractMinAmtDueCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        double expected = 0;
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractMinAmtDue());
+        assertTrue(exception.getMessage().contains("Minimum Amount Due"));
+        assertEquals(expected, bpicc.getMinAmountDue());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
 
 
 }
