@@ -135,7 +135,16 @@ public abstract class CreditStatement extends AbstractStatement {
      */
     protected abstract void extractMinAmtDue();
 
+    /**
+     * Extracts the Previous Balance from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #beginningBalance} field.
+     */
     protected abstract void extractPreviousBalance();
+    
+    /**
+     * Extracts the Total Credits from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #totalCredits} field.
+     */
     protected abstract void extractTotalCredits();
     protected abstract void extractTotalDebits();
     protected abstract void extractTotalAmountDue();

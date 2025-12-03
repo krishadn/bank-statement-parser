@@ -1,5 +1,7 @@
 package kpes.finapp.service;
 
+import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -105,12 +107,12 @@ public class BPICreditStatement extends CreditStatement {
      */
     @Override
     protected void extractMinAmtDue() {
-        String dateRegex = "MINIMUMAMOUNTDUE(\\d*\\.\\d\\d)";
-        Pattern p = Pattern.compile(dateRegex);
+        String minAmtDueRegex = "MINIMUMAMOUNTDUE((\\d{1,3},)*\\d{1,3}\\.\\d\\d)";
+        Pattern p = Pattern.compile(minAmtDueRegex);
         Matcher matcher = p.matcher(rawString);
 
         if (matcher.find()) {
-            minAmountDue = Double.parseDouble(matcher.group(1));
+            minAmountDue = parseAmount(matcher.group(1));
             return;
         }
 
@@ -118,18 +120,55 @@ public class BPICreditStatement extends CreditStatement {
 
     }
 
-
-    @Override
-    protected void extractPreviousBalance() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'extractPreviousBalance'");
+    private double parseAmount(String amount) {
+        DecimalFormat formatter = new DecimalFormat("###,###.###");
+        try {
+            return formatter.parse(amount).doubleValue();
+        } catch (ParseException e) {
+            System.out.println("Parsing error");
+            e.printStackTrace();
+            return 0;
+        }
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws IllegalStateException when the pattern for Previous Balance is not found 
+     */
+    @Override
+    protected void extractPreviousBalance() {
+        String prevBalRegex = "PreviousBalance((\\d{1,3},)*\\d{1,3}\\.\\d\\d)";
+        Pattern p = Pattern.compile(prevBalRegex);
+        Matcher matcher = p.matcher(rawString);
 
+        if (matcher.find()) {
+            beginningBalance = parseAmount(matcher.group(1));
+            return;
+        }
+
+        throw new IllegalStateException("Cannot find Previous Balance from extracted text. Check updates in statement format");
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws IllegalStateException when the pattern for Total Credits is not found 
+     */
     @Override
     protected void extractTotalCredits() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'extractTotalCredits'");
+        String creditsRegex = "Total((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)";
+        Pattern p = Pattern.compile(creditsRegex);
+        Matcher matcher = p.matcher(rawString);
+
+        if (matcher.find()) {
+            double purchAndAdv = parseAmount(matcher.group(5));
+            double installment = parseAmount(matcher.group(7));
+            double finCharge = parseAmount(matcher.group(9));
+            double lateCharge = parseAmount(matcher.group(11));                        
+            totalCredits = purchAndAdv + installment + finCharge + lateCharge;
+            return;
+        }
+
+        throw new IllegalStateException("Cannot find Total Credits from extracted text. Check updates in statement format");
     }
 
 

@@ -58,6 +58,14 @@ public abstract class AbstractStatement implements SSExportable {
         return parsed;
     }
 
+    public double getBeginningBalance() {
+        return beginningBalance;
+    }
+
+    public double getTotalCredits() {
+        return totalCredits;
+    }
+
 
     /* Concrete Methods */
 

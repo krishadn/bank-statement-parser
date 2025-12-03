@@ -23,7 +23,8 @@ public class App {
          */
         // String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\sampleStatement2.pdf";
         // String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\noTransactions.pdf";
-        String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\oct2025.pdf";
+        // String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\oct2025.pdf";
+        String pdfPath = "C:\\Users\\KPES\\Desktop\\services\\nov2025.pdf";
 
 
         
@@ -47,7 +48,7 @@ public class App {
         // OldBankStatement bs1 = createDatedBankStatement(pdfFile, Bank.BPICC);
 
         // System.out.println(bs1);
-        // Path filePath = Paths.get("BankStatements/sample.xlsx");
+        // Path filePath = Paths.get("BankStatements/nov2025.xlsx");
 
         // saveBankStatementToXlsx(filePath, bs1);
 
