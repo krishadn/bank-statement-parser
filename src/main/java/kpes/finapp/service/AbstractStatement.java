@@ -74,11 +74,11 @@ public abstract class AbstractStatement implements SSExportable {
      * and file type. It also checks whether the pdf is a bank statement by checking against the {@code pattern}
      * (varies depending on specific {@link AbstractStatement} implementation)
      * @param path - path to the Bank Statement PDF file
-     * @param extractor - {@link ITextExtractor} implementation
+     * @param extractor - {@link TextExtractor} implementation
      * @param pw - password for decrypting encrypted Bank Statement PDF file 
      * @return true if the extraction is successful, false otherwise
      */
-    public boolean extractStatementText(Path path, ITextExtractor extractor, String pw) {
+    public boolean extractStatementText(Path path, TextExtractor<Path, String> extractor, String pw) {
         if (Files.notExists(path)) throw new IllegalArgumentException("File does not exist");
         if (!path.getFileName().toString().toLowerCase().endsWith(".pdf")) throw new IllegalArgumentException("File is not a PDF file");
 
@@ -102,9 +102,9 @@ public abstract class AbstractStatement implements SSExportable {
     /**
      * Method for UNENCRYPTED bank statement. {@code pw} defaults to empty String
      * 
-     * @see #extractStatementText(Path, ITextExtractor, String)
+     * @see #extractStatementText(Path, TextExtractor, String)
      */
-    public boolean extractStatementText(Path path, ITextExtractor extractor) {
+    public boolean extractStatementText(Path path, TextExtractor<Path, String> extractor) {
         return extractStatementText(path, extractor, "");
     }
 
@@ -113,7 +113,7 @@ public abstract class AbstractStatement implements SSExportable {
     /* Abstract Methods */
 
     /**
-     * Factory method to create a Pattern object used in {@link #extractStatementText(Path, ITextExtractor, String)} 
+     * Factory method to create a Pattern object used in {@link #extractStatementText(Path, TextExtractor, String)} 
      * to check if the extracted text is a valid bank statement.
      * Pattern is specific to each concrete bank statement implementations.
      * @return pattern that should exist in a valid bank statement 

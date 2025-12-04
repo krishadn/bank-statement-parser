@@ -2,7 +2,7 @@ package kpes.finapp.service;
 
 import java.io.IOException;
 
-public interface ITextExtractor {
+public interface TextExtractor<T, S> {
 
     /**
      * Text extractor from an external file
@@ -11,6 +11,6 @@ public interface ITextExtractor {
      * @return text extracted from the file
      * @throws IOException if there is a problem in accessing the external file
      */
-    public abstract String extractText(Object forExtraction, Object credentials) throws IOException;
+    public abstract String extractText(T forExtraction, S credentials) throws IOException;
     
 }

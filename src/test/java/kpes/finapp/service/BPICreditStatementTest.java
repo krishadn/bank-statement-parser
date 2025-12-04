@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 public class BPICreditStatementTest {
 
     BPICreditStatement bpicc;
-    ITextExtractor mockExtractor;
+    TextExtractor<Path, String> mockExtractor;
 
     @BeforeEach
     void setUp() {
@@ -31,7 +31,7 @@ public class BPICreditStatementTest {
         mockExtractor = mock(PDFBoxExtractor.class);
     }
 
-    /* Tests for extractStatementText */
+    /* ====================== Tests for extractStatementText ====================== */
     
     @Test
     void testExtractStatementTextCaseNonExisting() {
@@ -117,7 +117,7 @@ public class BPICreditStatementTest {
     }
 
     
-    /* Tests for parseRawText */
+    /* ====================== Tests for parseRawText ====================== */
 
     @Test
     void testParseRawTextCaseGeneral() throws IOException {
@@ -206,7 +206,7 @@ public class BPICreditStatementTest {
     }
 
     
-    /* Tests for preprocessRawText */
+    /* ====================== Tests for preprocessRawText ====================== */
 
     @Test
     void testPreprocessRawTextCaseRemovedAllSpaces() throws IOException {
@@ -230,7 +230,7 @@ public class BPICreditStatementTest {
     }
 
 
-    /* Tests for extractStatementDate */
+    /* ====================== Tests for extractStatementDate ====================== */
 
     @Test
     void testExtractStatementDateCasePatternFoundTwoDigitDate() throws IOException {
@@ -325,7 +325,7 @@ public class BPICreditStatementTest {
     }
 
 
-    /* Tests for extractDueDate */
+    /* ====================== Tests for extractDueDate ====================== */
 
     @Test
     void testExtractDueDateCasePatternFoundOneDigitDate() throws IOException {
@@ -397,7 +397,7 @@ public class BPICreditStatementTest {
     }
 
 
-    /* Tests for extractMinAmtDue */
+    /* ====================== Tests for extractMinAmtDue ====================== */
 
     @Test
     void testExtractMinAmtDueCasePatternFoundHundred() throws IOException {
@@ -496,7 +496,7 @@ public class BPICreditStatementTest {
     }
 
 
-    /* Tests for extractPreviousBalance */
+    /* ====================== Tests for extractPreviousBalance ====================== */
 
     @Test
     void testExtractPreviousBalanceCasePatternFoundHundred() throws IOException {
@@ -596,7 +596,7 @@ public class BPICreditStatementTest {
     }
 
 
-    /* Tests for extractTotalCredits */
+    /* ====================== Tests for extractTotalCredits ====================== */
 
     @Test
     void testExtractTotalCreditsCasePatternFoundAllZero() throws IOException {
@@ -886,5 +886,8 @@ public class BPICreditStatementTest {
         Files.delete(p);
         
     }
+
+
+    /* ====================== Tests for extractTotalDebits ====================== */
 
 }

@@ -8,20 +8,18 @@ import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
-public class PDFBoxExtractor implements ITextExtractor{
+public class PDFBoxExtractor implements TextExtractor<Path, String> {
 
     // Tightly coupled with PDFBox methods since this is a specific implementation of ITextExtractor
     // ITextExtractor remains open for extention and closed for modification
     @Override
-    public String extractText(Object forExtraction, Object credentials) throws IOException {
-        Path path = (Path) forExtraction;
-        String pwd = (String) credentials;
+    public String extractText(Path forExtraction, String credentials) {
 
         String text = "";
 
         try {
             // TODO check if needs to close loader / file connection
-            PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(path), pwd);
+            PDDocument document = Loader.loadPDF(new RandomAccessReadBufferedFile(forExtraction), credentials);
             PDFTextStripper pdfStripper = new PDFTextStripper();
             pdfStripper.setSortByPosition(true);
             text = pdfStripper.getText(document).trim();
