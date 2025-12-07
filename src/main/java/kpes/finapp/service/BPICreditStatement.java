@@ -171,11 +171,22 @@ public class BPICreditStatement extends CreditStatement {
         throw new IllegalStateException("Cannot find Total Credits from extracted text. Check updates in statement format");
     }
 
-
+    /**
+     * {@inheritDoc}
+     * @throws IllegalStateException when the pattern for Total Debits is not found 
+     */
     @Override
     protected void extractTotalDebits() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'extractTotalDebits'");
+        String debitsRegex = "Total((\\d{1,3},)*\\d{1,3}\\.\\d\\d)((\\d{1,3},)*\\d{1,3}\\.\\d\\d)";
+        Pattern p = Pattern.compile(debitsRegex);
+        Matcher matcher = p.matcher(rawString);
+
+        if (matcher.find()) {                        
+            totalDebits = parseAmount(matcher.group(3));
+            return;
+        }
+
+        throw new IllegalStateException("Cannot find Total Debits from extracted text. Check updates in statement format");
     }
 
 

@@ -2,6 +2,7 @@ package kpes.finapp.service;
 
 import java.io.IOException;
 
+@FunctionalInterface
 public interface TextExtractor<T, S> {
 
     /**

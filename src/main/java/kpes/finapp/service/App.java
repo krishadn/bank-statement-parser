@@ -35,10 +35,7 @@ public class App {
             System.out.println(bpicc.getRawString());
         }
 
-
-
-
-
+        // bpicc.extractStatementText(pdfFile, (p, c) -> "");
 
         // String fullText = BankStatementParser.extractText(pdfFile);
         // String txtList = parseData(fullText, Bank.BPICC); 

@@ -66,6 +66,10 @@ public abstract class AbstractStatement implements SSExportable {
         return totalCredits;
     }
 
+    public double getTotalDebits() {
+        return totalDebits;
+    }
+
 
     /* Concrete Methods */
 

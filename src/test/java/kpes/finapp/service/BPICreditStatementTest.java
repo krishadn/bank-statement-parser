@@ -890,4 +890,99 @@ public class BPICreditStatementTest {
 
     /* ====================== Tests for extractTotalDebits ====================== */
 
+    @Test
+    void testExtractTotalDebitsCasePatternFoundZero() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " Total22,222.270.000.000.000.000.000.00 ";
+        double expected = 0;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTotalDebits();
+
+        //Assert
+        assertEquals(expected, bpicc.getTotalDebits());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTotalDebitsCasePatternFoundHundred() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " Total22,222.27989.78300.550.000.000.000.00 ";
+        double expected = 989.78;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTotalDebits();
+
+        //Assert
+        assertEquals(expected, bpicc.getTotalDebits());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTotalDebitsCasePatternFoundThousand() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " Total22,222.2720,356.9812,300.550.000.000.000.00 ";
+        double expected = 20356.98;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTotalDebits();
+
+        //Assert
+        assertEquals(expected, bpicc.getTotalDebits());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTotalDebitsCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        double expected = 0;
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTotalDebits());
+        assertTrue(exception.getMessage().contains("Total Debits"));
+        assertEquals(expected, bpicc.getTotalDebits());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
 }

@@ -1,6 +1,7 @@
 package kpes.finapp.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -89,14 +90,10 @@ public class PDFBoxExtractorTest {
         // Arrange
         Path filePath = Paths.get("src/test/resources/content_protected.pdf");
         String pwd = "";
-        String expected = "";
         
-        //Act
+        //Act and Assert
         PDFBoxExtractor extractor = new PDFBoxExtractor();
-        String result = extractor.extractText(filePath, pwd);
-
-        // Assert
-        assertEquals(expected, result);
+        assertThrows(IOException.class, () -> extractor.extractText(filePath, pwd));
 
     }
 
@@ -107,14 +104,10 @@ public class PDFBoxExtractorTest {
         // Arrange
         Path filePath = Files.createTempFile("statement", ".txt");
         String pwd = "";
-        String expected = "";
         
-        //Act
+        //Act and Assert
         PDFBoxExtractor extractor = new PDFBoxExtractor();
-        String result = extractor.extractText(filePath, pwd);
-
-        // Assert
-        assertEquals(expected, result);
+        assertThrows(IOException.class, () -> extractor.extractText(filePath, pwd));
 
         // Clean up
         Files.delete(filePath);
