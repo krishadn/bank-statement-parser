@@ -1,6 +1,7 @@
 package kpes.finapp.service;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class CreditTransaction extends AbstractTransaction {
 
@@ -23,6 +24,18 @@ public class CreditTransaction extends AbstractTransaction {
     @Override
     public String toString() {
         return String.format("%tD | %tD - %s - %,.2f", transactionDate, postDate, description, amount);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if ( o == this ) return true;
+        if ( ! (o instanceof CreditTransaction) ) return false;
+        return this.toString().equals(o.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(transactionDate,description,amount,postDate);
     }
     
 }

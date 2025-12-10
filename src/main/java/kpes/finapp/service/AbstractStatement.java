@@ -70,6 +70,14 @@ public abstract class AbstractStatement implements SSExportable {
         return totalDebits;
     }
 
+    public double getEndingBalance() {
+        return endingBalance;
+    }
+
+    public List<AbstractTransaction> getTransactions() {
+        return transactions;
+    }
+
 
     /* Concrete Methods */
 

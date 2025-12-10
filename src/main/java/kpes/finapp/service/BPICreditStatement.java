@@ -84,6 +84,11 @@ public class BPICreditStatement extends CreditStatement {
         throw new IllegalStateException("Cannot find Due Date from extracted text. Check updates in statement format");
     }
 
+    /*
+    * Uses "MMMMd,yyyy" date pattern
+    * i.e. January1,2025 ; January12,2025
+    * accepts rawDate with month in all caps
+    */
     private LocalDate formatDate(String rawDate) {
 
         // convert into MMMM format (i.e from OCTOBER to October)
@@ -189,18 +194,168 @@ public class BPICreditStatement extends CreditStatement {
         throw new IllegalStateException("Cannot find Total Debits from extracted text. Check updates in statement format");
     }
 
-
+    /**
+     * {@inheritDoc}
+     * @throws IllegalStateException when the pattern for Total Amount Due is not found 
+     */
     @Override
     protected void extractTotalAmountDue() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'extractTotalAmountDue'");
+        String amountDueRegex = "TOTALAMOUNTDUE((\\d{1,3},)*\\d{1,3}\\.\\d\\d)";
+        Pattern p = Pattern.compile(amountDueRegex);
+        Matcher matcher = p.matcher(rawString);
+
+        if (matcher.find()) {
+            endingBalance = parseAmount(matcher.group(1));
+            return;
+        }
+
+        throw new IllegalStateException("Cannot find Total Amount Due from extracted text. Check updates in statement format");
     }
 
-
+    /**
+     * {@inheritDoc}
+     * Assumes that {@link #extractStatementDate()} has already been successfully invoked.
+     * @throws IllegalStateException when the patterns for Transaction List is not found 
+     */
     @Override
     protected void extractTransactionList() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'extractTransactionList'");
+
+        // Purchases and Advances Transactions
+        String transactionsOnly = extractTransactionsOnly().split("S.I.P.BALANCESUMMARY")[0];
+
+        if (!transactionsOnly.isEmpty()) {
+            String txnRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})(.+\\D{2}(:\\d{2}/\\d{2})?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+            Pattern p = Pattern.compile(txnRegex);
+            Matcher matcher = p.matcher(transactionsOnly);
+
+            while (matcher.find()){
+                
+                LocalDate txnDate = formatDate(matcher.group(1).trim() + "," + statementDate.getYear());
+                LocalDate postDate = formatDate(matcher.group(2).trim() + "," + statementDate.getYear());
+                String description = matcher.group(3);
+                double amount = parseAmount(matcher.group(5));
+
+                CreditTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
+                transactions.add(txn);
+            }
+
+            if (transactions.isEmpty()) {
+                throw new IllegalStateException("Did not find match using current Transaction Pattern");
+            }
+        }
+
+
+        // Payment Transaction
+        // Note: No check for invalid/outdated payment pattern
+        String paymentRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})Payment-ThankYou(-(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+        Pattern paymentPattern = Pattern.compile(paymentRegex);
+        Matcher paymentMatcher = paymentPattern.matcher(rawString);
+        
+        if (paymentMatcher.find()) {                        
+            LocalDate txnDate = formatDate(paymentMatcher.group(1).trim() + "," + statementDate.getYear());
+            LocalDate postDate = formatDate(paymentMatcher.group(2).trim() + "," + statementDate.getYear());
+            String description = "Payment";
+            double amount = parseAmount(paymentMatcher.group(3));
+
+            CreditTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
+            transactions.add(txn);
+        } 
+
+        // Late Charges
+        // Note: No check for invalid/outdated late charges pattern
+        String lateRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})LateCharges((\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+        Pattern latePattern = Pattern.compile(lateRegex);
+        Matcher lateMatcher = latePattern.matcher(rawString);
+        
+        if (lateMatcher.find()) {                        
+            LocalDate txnDate = formatDate(lateMatcher.group(1).trim() + "," + statementDate.getYear());
+            LocalDate postDate = formatDate(lateMatcher.group(2).trim() + "," + statementDate.getYear());
+            String description = "Late Charges";
+            double amount = parseAmount(lateMatcher.group(3));
+
+            CreditTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
+            transactions.add(txn);
+        }
+
+
+        // Finance Charges
+        // Note: No check for invalid/outdated finance charges pattern
+        String financeRegex = "FinanceCharge((\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+        Pattern financePattern = Pattern.compile(financeRegex);
+        Matcher financeMatcher = financePattern.matcher(rawString);
+        
+        if (financeMatcher.find()) {                        
+            double amount = parseAmount(financeMatcher.group(1));
+
+            if (amount != 0) {
+                CreditTransaction txn = new CreditTransaction(statementDate,"Finance Charges", amount, statementDate);
+                transactions.add(txn);
+            }
+
+        }
+        
+        
+    }
+
+    /*
+    * The format of extracted text is as follow:
+    * 
+    * << other contents >>
+    * ######-#-##-#######-ACCOUNTHOLDERNAME
+    * InstallmentPurchase: (in some cases only)
+    * Month##Month##MerchantName:(##Mos.)###,###.##
+    * InstallmentAmortization: (in some cases only)
+    * (start of transaction listing to extract)
+    * << transactions to extract >>
+    * S.I.P.BALANCESUMMARY
+    * << installment transaction details >>
+    */
+    private String extractTransactionsOnly() {
+        String delimiterRegex = "\\d{6}-\\d{1}-\\d{2}-\\d{7}-\\S*\\s";
+        Pattern p = Pattern.compile(delimiterRegex);
+        Matcher m = p.matcher(rawString);
+
+        if (m.find()) {
+            String intermediate = p.split(rawString)[1];
+
+            if (intermediate.contains("InstallmentAmortization:")){
+
+                return intermediate.split("InstallmentAmortization:")[1];
+
+            } else if (intermediate.contains("InstallmentPurchase")) {
+
+                Pattern inmt = Pattern.compile("\\(\\d{1,3}Mos.\\)(\\d{1,3},)*\\d{1,3}\\.\\d\\d");
+                Matcher inmtMatcher = inmt.matcher(intermediate);
+                
+                int startIndex = 0;
+                while (inmtMatcher.find()) {
+                    startIndex = inmtMatcher.end();
+                }
+
+                return intermediate.substring(startIndex);
+
+            } 
+
+            return intermediate;
+
+
+        } else if (rawString.contains("UnbilledInstallmentAmount")) {
+
+            Pattern lastLine = Pattern.compile("UnbilledInstallmentAmount(\\d{1,3},)*\\d{1,3}\\.\\d\\d");
+            Matcher lastLineMatcher = lastLine.matcher(rawString);
+
+            int lastIndex = 0;
+
+            while(lastLineMatcher.find()) {
+                lastIndex = lastLineMatcher.end();
+            }
+
+            if (lastIndex == rawString.length()) return "";
+
+        }
+
+        throw new IllegalStateException("Cannot split rawText using delimiter. Check format update");
+
     }
 
     @Override

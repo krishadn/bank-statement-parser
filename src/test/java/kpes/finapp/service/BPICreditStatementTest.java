@@ -1,5 +1,6 @@
 package kpes.finapp.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,6 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,7 +121,7 @@ public class BPICreditStatementTest {
     }
 
     
-    /* ====================== Tests for parseRawText ====================== */
+    /* ====================== Tests for parseRawText (Integration Testing) ====================== */
 
     @Test
     void testParseRawTextCaseGeneral() throws IOException {
@@ -983,6 +987,522 @@ public class BPICreditStatementTest {
         // Clean up
         Files.delete(p);
         
+    }
+
+
+    /* ====================== Tests for extractTotalAmountDue ====================== */
+
+    @Test
+    void testExtractTotalAmountDueCasePatternFoundHundred() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " TOTALAMOUNTDUE345.67 ";
+        double expected = 345.67;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTotalAmountDue();
+
+        //Assert
+        assertEquals(expected, bpicc.getEndingBalance());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTotalAmountDueCasePatternFoundThousand() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " TOTALAMOUNTDUE54,321.01 ";
+        double expected = 54321.01;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTotalAmountDue();
+
+        //Assert
+        assertEquals(expected, bpicc.getEndingBalance());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+
+    @Test
+    void testExtractTotalAmountDueCasePatternFoundMillion() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " TOTALAMOUNTDUE12,345,543.21 ";
+        double expected = 12345543.21;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTotalAmountDue();
+
+        //Assert
+        assertEquals(expected, bpicc.getEndingBalance());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+
+    @Test
+    void testExtractTotalAmountCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        double expected = 0;
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTotalAmountDue());
+        assertTrue(exception.getMessage().contains("Total Amount Due"));
+        assertEquals(expected, bpicc.getEndingBalance());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
+
+    /* ====================== Tests for extractTransactionList ====================== */
+
+    @Test
+    void testExtractTransactionListCasePatternFoundNoInstallment() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractTransactionListCasePatternFoundInstallmentPurchase() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentPurchase:\n" +
+                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
+                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTransactionListCasePatternFoundInstallmentAmortization() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/03999,999,999.99\n" +
+                        "January25January31MerchantName1234Loc:15/6099,999,999,999.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), 
+                                                        "MerchantName1234Loc:01/03", 999999999.99, 
+                                                        LocalDate.of(2025, 1, 30));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Loc:15/60", 99999999999.99, 
+                                                        LocalDate.of(2025, 1, 31));                                                        
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractTransactionListCasePatternFoundInstallmentPurchaseAndAmortization() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentPurchase:\n" +
+                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
+                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/0387,654.32\n" +
+                        "January25January31MerchantName1234Loc:15/60123,456.78\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), 
+                                                        "MerchantName1234Loc:01/03", 87654.32, 
+                                                        LocalDate.of(2025, 1, 30));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Loc:15/60", 123456.78, 
+                                                        LocalDate.of(2025, 1, 31));                                                        
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTransactionListCasePatternFoundSIPDetails() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentPurchase:\n" +
+                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
+                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
+                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n" +
+                        "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), 
+                                                        "MerchantName1234Loc:01/03", 78901.23, 
+                                                        LocalDate.of(2025, 1, 30));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Loc:15/60", 45678.99, 
+                                                        LocalDate.of(2025, 1, 31));                                                        
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
+
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractTransactionListCaseNoDelimiterFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "UnbilledInstallmentAmount0.00\n" +
+                        // "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentPurchase:\n" +
+                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
+                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
+                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n" +
+                        "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTransactionList());
+        assertTrue(exception.getMessage().contains("Cannot split"));
+        assertTrue(bpicc.getTransactions().isEmpty());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
+    @Test
+    void testExtractTransactionListCaseNoTransactionPatternFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "UnbilledInstallmentAmount0.00\n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "January20,2025January30,2025MerchantName1234Loc:01/0378,901.23\n" +
+                        "MerchantName1234Loc:01/0378,901.23\n" +
+                        "MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "MerchantName1234Location301,000.45\n" +
+                        "MerchantName1234Location568.25\n" +
+                        "MerchantName1234Location2,345,678.09\n" +
+                        "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTransactionList());
+        assertTrue(exception.getMessage().contains("Transaction Pattern"));
+        assertTrue(bpicc.getTransactions().isEmpty());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
+    
+    @Test
+    void testExtractTransactionListCaseNoTransaction() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "UnbilledInstallmentAmount0.00";
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertTrue(bpicc.getTransactions().isEmpty());
+        assertDoesNotThrow(() -> bpicc.extractTransactionList());
+        
+        // Clean up
+        Files.delete(p);
+        
+
+    }
+
+    @Test
+    void testExtractTransactionListCasePatternFoundWithPaymentLCFC() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "STATEMENTDATEFEBRUARY04,2025\n" +
+                        "January15January15LateCharges1,234.56\n" +
+                        "January5January5Payment-ThankYou-12,345.66\n" +
+                        "FinanceCharge789.01\n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 5), 
+                                                        "Payment", -12345.66, 
+                                                        LocalDate.of(2025, 1, 5));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 15), 
+                                                        "Late Charges", 1234.56, 
+                                                        LocalDate.of(2025, 1, 15));
+        CreditTransaction expectedT6 = new CreditTransaction(LocalDate.of(2025, 2, 4), 
+                                                        "Finance Charges", 789.01, 
+                                                        LocalDate.of(2025, 2, 4));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5, expectedT6));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractStatementDate();
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractTransactionListCasePatternFoundWithZeroFC() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "STATEMENTDATEFEBRUARY04,2025\n" +
+                        "FinanceCharge0.00\n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
+                                                        "MerchantName1234Location", 301000.45, 
+                                                        LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
+                                                        "MerchantName1234Location", 568.25, 
+                                                        LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
+                                                        "MerchantName1234Location", 2345678.09, 
+                                                        LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractStatementDate();
+        bpicc.extractTransactionList();
+
+        //Assert
+        assertEquals(expected, bpicc.getTransactions());
+        
+        // Clean up
+        Files.delete(p);
+
     }
 
 }

@@ -152,7 +152,17 @@ public abstract class CreditStatement extends AbstractStatement {
      * and assigns the extracted value to the {@link #totalDebits} field.
      */
     protected abstract void extractTotalDebits();
+
+    /**
+     * Extracts the Total Amount Due from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #endingBalance} field.
+     */
     protected abstract void extractTotalAmountDue();
+
+    /**
+     * Extracts the Transaction List from the preprocessed {@link #rawString}
+     * and adds extracted transactions to the {@link #transactions} field.
+     */
     protected abstract void extractTransactionList();
 
 }
