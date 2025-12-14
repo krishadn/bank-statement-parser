@@ -1505,4 +1505,252 @@ public class BPICreditStatementTest {
 
     }
 
+    /* ====================== Tests for extractInstallmentDetails ====================== */
+
+    @Test
+    void testExtractInstallmentDetailsCaseNoSIP() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentPurchase:\n" +
+                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
+                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
+                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n" +
+                        // "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractInstallmentDetails();
+
+        //Assert
+        assertTrue(bpicc.getInstallmentTxns().isEmpty());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractInstallmentDetailsCasePatternFoundOneTransaction() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
+                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n" +
+                        "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining" +
+                        "120524113027Merchant123NameInstal123,456.78234,567.89";
+
+        InstallmentTransaction expected1 = new InstallmentTransaction(LocalDate.of(2024, 12, 5), "Merchant123NameInstal", 
+                                                                123456.78, LocalDate.of(2027, 11, 30), 234567.89);
+        List<AbstractTransaction> expected = new ArrayList<>(Arrays.asList(expected1));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractInstallmentDetails();
+
+        //Assert
+        assertEquals(expected, bpicc.getInstallmentTxns());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractInstallmentDetailsCasePatternFoundThreeTransactions() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "InstallmentAmortization:\n" +
+                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
+                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "January1January2MerchantName1234Location301,000.45\n" +
+                        "January13January14MerchantName1234Location568.25\n" +
+                        "January25January27MerchantName1234Location2,345,678.09\n" +
+                        "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining" +
+                        "120524113027Merchant123NameInstal123,456.78234,567.89\n" +
+                        "010209100220Merchant123NameInstal23,456.7834,567.89\n" +
+                        "030502012409Merchant123NameInstal456.78567.89\n";
+
+        InstallmentTransaction expected1 = new InstallmentTransaction(LocalDate.of(2024, 12, 5), "Merchant123NameInstal", 
+                                                                123456.78, LocalDate.of(2027, 11, 30), 234567.89);
+        InstallmentTransaction expected2 = new InstallmentTransaction(LocalDate.of(2009, 1, 2), "Merchant123NameInstal", 
+                                                                23456.78, LocalDate.of(2020, 10, 02), 34567.89);
+        InstallmentTransaction expected3 = new InstallmentTransaction(LocalDate.of(2002, 3, 5), "Merchant123NameInstal", 
+                                                                456.78, LocalDate.of(2009, 1, 24), 567.89);                                                                                                                
+        List<AbstractTransaction> expected = new ArrayList<>(Arrays.asList(expected1, expected2, expected3));
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractInstallmentDetails();
+
+        //Assert
+        assertEquals(expected, bpicc.getInstallmentTxns());
+        
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractInstallmentDetailsCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
+                        "UnbilledInstallmentAmount0.00\n" +
+                        "123456-7-89-0123456-GABRIELASILANG \n" +
+                        "January20,2025January30,2025MerchantName1234Loc:01/0378,901.23\n" +
+                        "MerchantName1234Loc:01/0378,901.23\n" +
+                        "MerchantName1234Loc:15/6045,678.99\n" +                        
+                        "MerchantName1234Location301,000.45\n" +
+                        "MerchantName1234Location568.25\n" +
+                        "MerchantName1234Location2,345,678.09\n" +
+                        "S.I.P.BALANCESUMMARY\n" +
+                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractInstallmentDetails());
+        assertTrue(exception.getMessage().contains("Installment Details Pattern"));
+        assertTrue(bpicc.getInstallmentTxns().isEmpty());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
+
+    /* ====================== Tests for extractUnbilledInstallment ====================== */
+
+    @Test
+    void testExtractUnbilledInstallmentCasePatternFoundHundreds() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " UnbilledInstallmentAmount543.21 ";
+        double expected = 543.21;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractUnbilledInstallment();
+
+        //Assert
+        assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractUnbilledInstallmentCasePatternFoundThousands() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " UnbilledInstallmentAmount345,543.21 ";
+        double expected = 345543.21;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractUnbilledInstallment();
+
+        //Assert
+        assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+    @Test
+    void testExtractUnbilledInstallmentCasePatternFoundMillions() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
+                        " UnbilledInstallmentAmount12,345,543.21 ";
+        double expected = 12345543.21;
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractUnbilledInstallment();
+
+        //Assert
+        assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
+        
+        // Clean up
+        Files.delete(p);
+
+
+    }
+
+
+    @Test
+    void testExtractUnbilledInstallmentCasePatternNotFound() throws IOException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        double expected = 0;
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+
+        //Assert
+        Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractUnbilledInstallment());
+        assertTrue(exception.getMessage().contains("Unbilled Installment Amount"));
+        assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
+        
+        // Clean up
+        Files.delete(p);
+        
+    }
+
+
 }

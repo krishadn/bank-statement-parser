@@ -13,14 +13,21 @@ public class BPICreditStatement extends CreditStatement {
 
     private double unbilledInstallmentAmt;
     private List<AbstractTransaction> installmentTxns;
-    private int points;
 
 
     public BPICreditStatement() {
         super();
         unbilledInstallmentAmt = 0;
         installmentTxns = new ArrayList<>();
-        points = 0;
+    }
+
+    /* Getters */
+    public List<AbstractTransaction> getInstallmentTxns() {
+        return installmentTxns;
+    }
+
+    public double getUnbilledInstallmentAmt() {
+        return unbilledInstallmentAmt;
     }
     
     /**
@@ -235,7 +242,7 @@ public class BPICreditStatement extends CreditStatement {
                 String description = matcher.group(3);
                 double amount = parseAmount(matcher.group(5));
 
-                CreditTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
+                AbstractTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
                 transactions.add(txn);
             }
 
@@ -257,7 +264,7 @@ public class BPICreditStatement extends CreditStatement {
             String description = "Payment";
             double amount = parseAmount(paymentMatcher.group(3));
 
-            CreditTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
+            AbstractTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
             transactions.add(txn);
         } 
 
@@ -273,7 +280,7 @@ public class BPICreditStatement extends CreditStatement {
             String description = "Late Charges";
             double amount = parseAmount(lateMatcher.group(3));
 
-            CreditTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
+            AbstractTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
             transactions.add(txn);
         }
 
@@ -288,7 +295,7 @@ public class BPICreditStatement extends CreditStatement {
             double amount = parseAmount(financeMatcher.group(1));
 
             if (amount != 0) {
-                CreditTransaction txn = new CreditTransaction(statementDate,"Finance Charges", amount, statementDate);
+                AbstractTransaction txn = new CreditTransaction(statementDate,"Finance Charges", amount, statementDate);
                 transactions.add(txn);
             }
 
@@ -358,27 +365,63 @@ public class BPICreditStatement extends CreditStatement {
 
     }
 
-    @Override
+    /**
+     * Extracts the Installment Details from the preprocessed {@link #rawString}
+     * and adds extracted transactions to the {@link #installmentTxns} field.
+     * @throws IllegalStateException when the patterns for Installment Details is not found 
+     */
+    public void extractInstallmentDetails() {
+
+        if (!rawString.contains("S.I.P.BALANCESUMMARY")) return;
+
+        String transactionsOnly = extractTransactionsOnly().split("S.I.P.BALANCESUMMARY")[1];
+
+        if (!transactionsOnly.isEmpty()) {
+            String installmentRegex = "(\\d{6})(\\d{6})(.+\\D{2})((\\d{1,3},)*\\d{1,3}\\.\\d{2})((\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+            Pattern p = Pattern.compile(installmentRegex);
+            Matcher matcher = p.matcher(transactionsOnly);
+
+            while (matcher.find()){
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyy");
+                LocalDate txnDate = LocalDate.parse(matcher.group(1), formatter);
+                LocalDate lastPaymentDate = LocalDate.parse(matcher.group(2), formatter);
+                String description = matcher.group(3);
+                double amount = parseAmount(matcher.group(4));
+                double bal = parseAmount(matcher.group(6));
+                AbstractTransaction txn = new InstallmentTransaction(txnDate, description, amount, lastPaymentDate, bal);
+                installmentTxns.add(txn);
+            }
+
+            if (installmentTxns.isEmpty()) {
+                throw new IllegalStateException("Did not find match using current Installment Details Pattern");
+            }
+        }
+
+    }
+
+    /**
+     * Extracts the Unbilled Installment Amount from the preprocessed {@link #rawString}
+     * and assigns the extracted value to the {@link #unbilledInstallmentAmt} field.
+     */
+    public void extractUnbilledInstallment() {
+
+        String unbilledRegex = "UnbilledInstallmentAmount((\\d{1,3},)*\\d{1,3}\\.\\d\\d)";
+        Pattern p = Pattern.compile(unbilledRegex);
+        Matcher matcher = p.matcher(rawString);
+
+        if (matcher.find()) {
+            unbilledInstallmentAmt = parseAmount(matcher.group(1));
+            return;
+        }
+
+        throw new IllegalStateException("Cannot find Unbilled Installment Amount from extracted text. Check updates in statement format");
+
+    }
+    
+     @Override
     public void saveToSpreadSheet() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'saveToSpreadSheet'");
     }
-
-
-    // TODO
-    public void parseOtherData() {
-            // add transactions to list
-            // including payment, finance charges, late payment charges
-            // mainly from transaction listing (which includes installment due)
-
-        /* installment transactions */
-        // add txns to list
-        // unbilled installment amount (match with remaining bal)
-
-        /* points */
-        //extractPoints();
-
-    }
-    
 
 }

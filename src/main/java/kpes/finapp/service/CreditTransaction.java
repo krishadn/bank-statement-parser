@@ -26,6 +26,7 @@ public class CreditTransaction extends AbstractTransaction {
         return String.format("%tD | %tD - %s - %,.2f", transactionDate, postDate, description, amount);
     }
 
+    //TODO fix equals
     @Override
     public boolean equals(Object o) {
         if ( o == this ) return true;
@@ -33,6 +34,7 @@ public class CreditTransaction extends AbstractTransaction {
         return this.toString().equals(o.toString());
     }
 
+    //TODO fix hashCode
     @Override
     public int hashCode() {
         return Objects.hash(transactionDate,description,amount,postDate);
