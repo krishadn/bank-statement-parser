@@ -1,7 +1,11 @@
-package kpes.finapp.service;
+package kpes.finapp.service.inf;
 
 import java.io.IOException;
 
+/**
+ * Interface for extracting text from a file
+ * @author Krizzia Santillan
+ */
 @FunctionalInterface
 public interface TextExtractor<T, S> {
 

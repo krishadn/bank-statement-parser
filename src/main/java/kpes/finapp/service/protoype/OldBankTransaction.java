@@ -1,4 +1,4 @@
-package kpes.finapp.service;
+package kpes.finapp.service.protoype;
 
 public class OldBankTransaction {
 

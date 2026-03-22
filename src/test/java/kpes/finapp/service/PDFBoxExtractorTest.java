@@ -11,6 +11,8 @@ import java.nio.file.Paths;
 
 import org.junit.jupiter.api.Test;
 
+import kpes.finapp.service.utils.PDFBoxExtractor;
+
 public class PDFBoxExtractorTest {
     
 

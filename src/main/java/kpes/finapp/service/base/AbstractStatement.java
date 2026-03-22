@@ -1,4 +1,4 @@
-package kpes.finapp.service;
+package kpes.finapp.service.base;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -6,6 +6,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import kpes.finapp.service.inf.SSExportable;
+import kpes.finapp.service.inf.TextExtractor;
 
 /**
  * Base class for bank statements

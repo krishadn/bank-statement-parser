@@ -6,6 +6,8 @@ import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
+import kpes.finapp.service.txns.InstallmentTransaction;
+
 public class InstallmentTransactionTest {
 
     @Test

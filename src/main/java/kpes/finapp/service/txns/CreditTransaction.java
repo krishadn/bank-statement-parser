@@ -1,7 +1,9 @@
-package kpes.finapp.service;
+package kpes.finapp.service.txns;
 
 import java.time.LocalDate;
 import java.util.Objects;
+
+import kpes.finapp.service.base.AbstractTransaction;
 
 public class CreditTransaction extends AbstractTransaction {
 

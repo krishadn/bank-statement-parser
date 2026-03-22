@@ -24,14 +24,37 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import kpes.finapp.service.base.AbstractTransaction;
+import kpes.finapp.service.inf.TextExtractor;
+import kpes.finapp.service.txns.CreditTransaction;
+import kpes.finapp.service.txns.InstallmentTransaction;
+import kpes.finapp.service.utils.PDFBoxExtractor;
+
 public class BPICreditStatementTest {
 
     BPICreditStatement bpicc;
     TextExtractor<Path, String> mockExtractor;
 
+    private static class BPICreditStatementWrapper extends BPICreditStatement {
+
+        public BPICreditStatementWrapper() {
+            super();
+        }
+
+        @Override
+        protected boolean isBalanced() {
+            return super.isBalanced();
+        }
+
+        @Override
+        protected boolean isTransactionComplete() {
+            return super.isTransactionComplete();
+        }
+    }
+
     @BeforeEach
     void setUp() {
-        bpicc = new BPICreditStatement();
+        bpicc = new BPICreditStatementWrapper();
         mockExtractor = mock(PDFBoxExtractor.class);
     }
 
@@ -130,7 +153,7 @@ public class BPICreditStatementTest {
         // IMPORTANT ensure all functions are called      
 
         // Arrange
-        BPICreditStatement mockBpiCc = mock(BPICreditStatement.class);
+        BPICreditStatementWrapper mockBpiCc = mock(BPICreditStatementWrapper.class);
         doNothing().when(mockBpiCc).preprocessRawText();
         doNothing().when(mockBpiCc).extractStatementDate();
         doNothing().when(mockBpiCc).extractDueDate();
@@ -163,6 +186,7 @@ public class BPICreditStatementTest {
 
     }
 
+    //TODO integration testing
     @Test
     void testParseRawTextCaseZeroBeginningNoTransactions() {
 
@@ -180,6 +204,7 @@ public class BPICreditStatementTest {
 
     }
 
+    //TODO integration testing
     @Test
     void testParseRawTextCaseWithBeginningAndTransactions() {
 
@@ -197,7 +222,7 @@ public class BPICreditStatementTest {
 
     }
 
-
+    //TODO integration testing
     @Test
     void testParseRawTextCaseStatementNotBalanced() {
 

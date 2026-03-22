@@ -1,5 +1,10 @@
 package kpes.finapp.service;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.LocalDate;
@@ -8,6 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import kpes.finapp.service.base.AbstractTransaction;
+import kpes.finapp.service.base.CreditStatement;
+import kpes.finapp.service.txns.CreditTransaction;
+import kpes.finapp.service.txns.InstallmentTransaction;
 
 public class BPICreditStatement extends CreditStatement {
 
@@ -418,10 +433,44 @@ public class BPICreditStatement extends CreditStatement {
 
     }
     
-     @Override
-    public void saveToSpreadSheet() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'saveToSpreadSheet'");
+    @Override
+    public void saveToSpreadSheet(Path p) {
+        
+        Workbook wb = new XSSFWorkbook();
+        Sheet summarySheet = wb.createSheet("Summary");
+        Sheet detailsSheet = wb.createSheet("Transactions");
+        Sheet installmentSheet = wb.createSheet("Installment");
+
+        // create header style and content style
+        CellStyle headerStyle = wb.createCellStyle();
+        CellStyle contentStyle = wb.createCellStyle();
+
+        enterSummaryData(summarySheet, headerStyle, contentStyle);
+        enterDetails(detailsSheet, contentStyle);
+        enterInstallmentData(installmentSheet, contentStyle);
+
+        try (OutputStream fileOut = Files.newOutputStream(p, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {            
+            wb.write(fileOut);
+            wb.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void enterSummaryData(Sheet sheet, CellStyle headerStyle, CellStyle contentStyle) {
+        // TODO implement method
+        throw new UnsupportedOperationException("This method has not yet been implemented");
+    }
+
+    private void enterDetails(Sheet sheet, CellStyle contentStyle) {
+        // TODO implement method
+        throw new UnsupportedOperationException("This method has not yet been implemented");
+    }
+
+    private void enterInstallmentData(Sheet sheet, CellStyle contentStyle) {
+        // TODO implement method
+        throw new UnsupportedOperationException("This method has not yet been implemented");
     }
 
 }

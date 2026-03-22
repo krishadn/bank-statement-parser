@@ -1,9 +1,9 @@
-package kpes.finapp.service;
+package kpes.finapp.service.protoype;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import kpes.finapp.service.BankStatementParser.Bank;
+import kpes.finapp.service.protoype.BankStatementParser.Bank;
 
 public class OldBankStatement {
     

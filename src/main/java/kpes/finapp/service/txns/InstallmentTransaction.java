@@ -1,14 +1,16 @@
-package kpes.finapp.service;
+package kpes.finapp.service.txns;
 
 import java.time.LocalDate;
 import java.util.Objects;
+
+import kpes.finapp.service.base.AbstractTransaction;
 
 public class InstallmentTransaction extends AbstractTransaction {
 
     private LocalDate lastPaymentDate;
     private double remainingBal;
 
-    protected InstallmentTransaction(LocalDate transactionDate, 
+    public InstallmentTransaction(LocalDate transactionDate, 
                                         String description, 
                                         double amount,
                                         LocalDate lastPaymentDate,

@@ -1,4 +1,4 @@
-package kpes.finapp.service;
+package kpes.finapp.service.utils;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -7,6 +7,12 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 
+import kpes.finapp.service.inf.TextExtractor;
+
+/**
+ * Text extractor implementation class that uses PDFBox for extracting text from a PDF file
+ * @author Krizzia Santillan
+ */
 public class PDFBoxExtractor implements TextExtractor<Path, String> {
 
     // Tightly coupled with PDFBox methods since this is a specific implementation of TextExtractor
