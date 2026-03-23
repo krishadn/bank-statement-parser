@@ -12,15 +12,17 @@ import kpes.finapp.service.inf.TextExtractor;
 
 /**
  * Base class for bank statements
+ * 
  * @author Krizzia Santillan
  */
 public abstract class AbstractStatement implements SSExportable {
 
     /* Fields */
 
-    // regular expression to use for checking if text extracted is from a valid bank statement
+    // regular expression to use for checking if text extracted is from a valid bank
+    // statement
     protected Pattern pattern;
-    
+
     // raw text
     protected String rawString;
 
@@ -36,7 +38,6 @@ public abstract class AbstractStatement implements SSExportable {
     // details
     protected List<AbstractTransaction> transactions;
 
-
     /**
      * Constructor initializing field values
      */
@@ -47,7 +48,7 @@ public abstract class AbstractStatement implements SSExportable {
         totalDebits = 0;
         endingBalance = 0;
         transactions = new ArrayList<>();
-        pattern = createPattern();  
+        pattern = createPattern();
         parsed = false;
     }
 
@@ -81,27 +82,31 @@ public abstract class AbstractStatement implements SSExportable {
         return transactions;
     }
 
-
     /* Concrete Methods */
 
     /**
-     * Method to extract text from an ENCRYPTED bank statement, providing checks for validity, existence of file,
-     * and file type. It also checks whether the pdf is a bank statement by checking against the {@code pattern}
-     * (varies depending on specific {@link AbstractStatement} implementation)
-     * @param path - path to the Bank Statement PDF file
+     * Method to extract text from an ENCRYPTED bank statement, providing checks for
+     * validity, existence of file, and file type. It also checks whether the pdf is
+     * a bank statement by checking against the {@code pattern} (varies depending on
+     * specific {@link #createPattern()} implementation)
+     * 
+     * @param path      - path to the Bank Statement PDF file
      * @param extractor - {@link TextExtractor} implementation
-     * @param pw - password for decrypting encrypted Bank Statement PDF file 
+     * @param pw        - password for decrypting encrypted Bank Statement PDF file
      * @return true if the extraction is successful, false otherwise
      */
     public boolean extractStatementText(Path path, TextExtractor<Path, String> extractor, String pw) {
-        if (Files.notExists(path)) throw new IllegalArgumentException("File does not exist");
-        if (!path.getFileName().toString().toLowerCase().endsWith(".pdf")) throw new IllegalArgumentException("File is not a PDF file");
+        if (Files.notExists(path))
+            throw new IllegalArgumentException("File does not exist");
+        if (!path.getFileName().toString().toLowerCase().endsWith(".pdf"))
+            throw new IllegalArgumentException("File is not a PDF file");
 
         String result = "";
 
         try {
             result = extractor.extractText(path, pw);
-            if (!pattern.matcher(result).find()) throw new IllegalArgumentException("File is not a Bank Statement");
+            if (!pattern.matcher(result).find())
+                throw new IllegalArgumentException("File is not a Bank Statement");
             rawString = result;
             return true;
 
@@ -113,49 +118,54 @@ public abstract class AbstractStatement implements SSExportable {
 
     }
 
-
     /**
-     * Method for UNENCRYPTED bank statement. {@code pw} defaults to empty String
+     * Method for UNENCRYPTED bank statement. Calls
+     * {@link #extractStatementText(Path, TextExtractor, String)} with {@code pw}
+     * defaulting to empty String
      * 
+     * @param path      - path to the Bank Statement PDF file
+     * @param extractor - {@link TextExtractor} implementation
      * @see #extractStatementText(Path, TextExtractor, String)
      */
     public boolean extractStatementText(Path path, TextExtractor<Path, String> extractor) {
         return extractStatementText(path, extractor, "");
     }
 
-
-
     /* Abstract Methods */
 
     /**
-     * Factory method to create a Pattern object used in {@link #extractStatementText(Path, TextExtractor, String)} 
-     * to check if the extracted text is a valid bank statement.
-     * Pattern is specific to each concrete bank statement implementations.
-     * @return pattern that should exist in a valid bank statement 
+     * Factory method to create a Pattern object used in
+     * {@link #extractStatementText(Path, TextExtractor, String)} to check if the
+     * extracted text is a valid bank statement. Pattern is specific to each
+     * concrete bank statement implementations.
+     * 
+     * @return pattern that should exist in a valid bank statement
      */
     protected abstract Pattern createPattern();
 
     /**
-     * Parses the {@link #rawString} and employs validity checks before 
-     * populating the fields with parsed data. Updates parsed status to true
-     * if all necessary fields are populated and validity checks are all successful.
+     * Parses the {@link #rawString} and employs validity checks before populating
+     * the fields with parsed data. Updates parsed status to true if all necessary
+     * fields are populated and validity checks are all successful.
      * 
-     * The implementation should use {@link #isBalanced()} and {@link #isTransactionComplete()}
-     * for the validity checks as a minimum.
+     * The implementation should use {@link #isBalanced()} and
+     * {@link #isTransactionComplete()} for the validity checks as a minimum.
      */
     protected abstract void parseRawText();
 
     /**
      * Method used to validate if the summary fields ared balanced
+     * 
      * @return true if the summary is balanced, false otherwise
      */
     protected abstract boolean isBalanced();
-    
+
     /**
-     * Method used to check transactions in the list against total credit and total debits
+     * Method used to check transactions in the list against total credit and total
+     * debits
+     * 
      * @return true if the transactions include all credits and debits
      */
     protected abstract boolean isTransactionComplete();
-
 
 }
