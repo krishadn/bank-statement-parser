@@ -29,7 +29,6 @@ public class BPICreditStatement extends CreditStatement {
     private double unbilledInstallmentAmt;
     private List<AbstractTransaction> installmentTxns;
 
-
     public BPICreditStatement() {
         super();
         unbilledInstallmentAmt = 0;
@@ -44,7 +43,7 @@ public class BPICreditStatement extends CreditStatement {
     public double getUnbilledInstallmentAmt() {
         return unbilledInstallmentAmt;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -62,10 +61,11 @@ public class BPICreditStatement extends CreditStatement {
     }
 
     /**
-     * {@inheritDoc}
-     * Uses additional function {@link #formatDate(String)} to fix extracted
-     * date format before converting it to {@link LocalDate} type.
-     * @throws IllegalStateException when the pattern for Statement Date is not found
+     * {@inheritDoc} Uses additional function {@link #formatDate(String)} to fix
+     * extracted date format before converting it to {@link LocalDate} type.
+     * 
+     * @throws IllegalStateException when the pattern for Statement Date is not
+     *                               found
      */
     @Override
     protected void extractStatementDate() {
@@ -80,14 +80,15 @@ public class BPICreditStatement extends CreditStatement {
             return;
         }
 
-        throw new IllegalStateException("Cannot find Statement Date from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Statement Date from extracted text. Check updates in statement format");
 
     }
 
     /**
-     * {@inheritDoc}
-     * Uses additional function {@link #formatDate(String)} to fix extracted
-     * date format before converting it to {@link LocalDate} type.
+     * {@inheritDoc} Uses additional function {@link #formatDate(String)} to fix
+     * extracted date format before converting it to {@link LocalDate} type.
+     * 
      * @throws IllegalStateException when the pattern for Due Date is not found
      */
     @Override
@@ -107,10 +108,9 @@ public class BPICreditStatement extends CreditStatement {
     }
 
     /*
-    * Uses "MMMMd,yyyy" date pattern
-    * i.e. January1,2025 ; January12,2025
-    * accepts rawDate with month in all caps
-    */
+     * Uses "MMMMd,yyyy" date pattern i.e. January1,2025 ; January12,2025 accepts
+     * rawDate with month in all caps
+     */
     private LocalDate formatDate(String rawDate) {
 
         // convert into MMMM format (i.e from OCTOBER to October)
@@ -120,17 +120,19 @@ public class BPICreditStatement extends CreditStatement {
         digitMatcher.find();
         String month = rawDate.substring(1, digitMatcher.start());
         month = rawDate.charAt(0) + month.toLowerCase();
-        
+
         String dateYear = rawDate.substring(digitMatcher.start());
- 
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMMd,yyyy");
-        String formattedDate = month + dateYear;        
+        String formattedDate = month + dateYear;
         return LocalDate.parse(formattedDate, formatter);
-    }    
+    }
 
     /**
      * {@inheritDoc}
-     * @throws IllegalStateException when the pattern for Minimum Amount Due is not found 
+     * 
+     * @throws IllegalStateException when the pattern for Minimum Amount Due is not
+     *                               found
      */
     @Override
     protected void extractMinAmtDue() {
@@ -143,7 +145,8 @@ public class BPICreditStatement extends CreditStatement {
             return;
         }
 
-        throw new IllegalStateException("Cannot find Minimum Amount Due from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Minimum Amount Due from extracted text. Check updates in statement format");
 
     }
 
@@ -160,7 +163,9 @@ public class BPICreditStatement extends CreditStatement {
 
     /**
      * {@inheritDoc}
-     * @throws IllegalStateException when the pattern for Previous Balance is not found 
+     * 
+     * @throws IllegalStateException when the pattern for Previous Balance is not
+     *                               found
      */
     @Override
     protected void extractPreviousBalance() {
@@ -173,12 +178,14 @@ public class BPICreditStatement extends CreditStatement {
             return;
         }
 
-        throw new IllegalStateException("Cannot find Previous Balance from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Previous Balance from extracted text. Check updates in statement format");
     }
 
     /**
      * {@inheritDoc}
-     * @throws IllegalStateException when the pattern for Total Credits is not found 
+     * 
+     * @throws IllegalStateException when the pattern for Total Credits is not found
      */
     @Override
     protected void extractTotalCredits() {
@@ -190,17 +197,19 @@ public class BPICreditStatement extends CreditStatement {
             double purchAndAdv = parseAmount(matcher.group(5));
             double installment = parseAmount(matcher.group(7));
             double finCharge = parseAmount(matcher.group(9));
-            double lateCharge = parseAmount(matcher.group(11));                        
+            double lateCharge = parseAmount(matcher.group(11));
             totalCredits = purchAndAdv + installment + finCharge + lateCharge;
             return;
         }
 
-        throw new IllegalStateException("Cannot find Total Credits from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Total Credits from extracted text. Check updates in statement format");
     }
 
     /**
      * {@inheritDoc}
-     * @throws IllegalStateException when the pattern for Total Debits is not found 
+     * 
+     * @throws IllegalStateException when the pattern for Total Debits is not found
      */
     @Override
     protected void extractTotalDebits() {
@@ -208,17 +217,20 @@ public class BPICreditStatement extends CreditStatement {
         Pattern p = Pattern.compile(debitsRegex);
         Matcher matcher = p.matcher(rawString);
 
-        if (matcher.find()) {                        
+        if (matcher.find()) {
             totalDebits = parseAmount(matcher.group(3));
             return;
         }
 
-        throw new IllegalStateException("Cannot find Total Debits from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Total Debits from extracted text. Check updates in statement format");
     }
 
     /**
      * {@inheritDoc}
-     * @throws IllegalStateException when the pattern for Total Amount Due is not found 
+     * 
+     * @throws IllegalStateException when the pattern for Total Amount Due is not
+     *                               found
      */
     @Override
     protected void extractTotalAmountDue() {
@@ -231,16 +243,21 @@ public class BPICreditStatement extends CreditStatement {
             return;
         }
 
-        throw new IllegalStateException("Cannot find Total Amount Due from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Total Amount Due from extracted text. Check updates in statement format");
     }
 
     /**
-     * {@inheritDoc}
-     * Assumes that {@link #extractStatementDate()} has already been successfully invoked.
-     * @throws IllegalStateException when the patterns for Transaction List is not found 
+     * {@inheritDoc} Assumes that {@link #extractStatementDate()} has already been
+     * successfully invoked.
+     * 
+     * @throws IllegalStateException when the patterns for Transaction List is not
+     *                               found
      */
     @Override
     protected void extractTransactionList() {
+
+        assert statementDate != null : "Statement Date must be successfully extracted before extracting transactions";
 
         // Purchases and Advances Transactions
         String transactionsOnly = extractTransactionsOnly().split("S.I.P.BALANCESUMMARY")[0];
@@ -250,8 +267,8 @@ public class BPICreditStatement extends CreditStatement {
             Pattern p = Pattern.compile(txnRegex);
             Matcher matcher = p.matcher(transactionsOnly);
 
-            while (matcher.find()){
-                
+            while (matcher.find()) {
+
                 LocalDate txnDate = formatDate(matcher.group(1).trim() + "," + statementDate.getYear());
                 LocalDate postDate = formatDate(matcher.group(2).trim() + "," + statementDate.getYear());
                 String description = matcher.group(3);
@@ -266,14 +283,13 @@ public class BPICreditStatement extends CreditStatement {
             }
         }
 
-
         // Payment Transaction
         // Note: No check for invalid/outdated payment pattern
         String paymentRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})Payment-ThankYou(-(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
         Pattern paymentPattern = Pattern.compile(paymentRegex);
         Matcher paymentMatcher = paymentPattern.matcher(rawString);
-        
-        if (paymentMatcher.find()) {                        
+
+        if (paymentMatcher.find()) {
             LocalDate txnDate = formatDate(paymentMatcher.group(1).trim() + "," + statementDate.getYear());
             LocalDate postDate = formatDate(paymentMatcher.group(2).trim() + "," + statementDate.getYear());
             String description = "Payment";
@@ -281,15 +297,15 @@ public class BPICreditStatement extends CreditStatement {
 
             AbstractTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
             transactions.add(txn);
-        } 
+        }
 
         // Late Charges
         // Note: No check for invalid/outdated late charges pattern
         String lateRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})LateCharges((\\d{1,3},)*\\d{1,3}\\.\\d{2})";
         Pattern latePattern = Pattern.compile(lateRegex);
         Matcher lateMatcher = latePattern.matcher(rawString);
-        
-        if (lateMatcher.find()) {                        
+
+        if (lateMatcher.find()) {
             LocalDate txnDate = formatDate(lateMatcher.group(1).trim() + "," + statementDate.getYear());
             LocalDate postDate = formatDate(lateMatcher.group(2).trim() + "," + statementDate.getYear());
             String description = "Late Charges";
@@ -299,39 +315,34 @@ public class BPICreditStatement extends CreditStatement {
             transactions.add(txn);
         }
 
-
         // Finance Charges
         // Note: No check for invalid/outdated finance charges pattern
         String financeRegex = "FinanceCharge((\\d{1,3},)*\\d{1,3}\\.\\d{2})";
         Pattern financePattern = Pattern.compile(financeRegex);
         Matcher financeMatcher = financePattern.matcher(rawString);
-        
-        if (financeMatcher.find()) {                        
+
+        if (financeMatcher.find()) {
             double amount = parseAmount(financeMatcher.group(1));
 
             if (amount != 0) {
-                AbstractTransaction txn = new CreditTransaction(statementDate,"Finance Charges", amount, statementDate);
+                AbstractTransaction txn = new CreditTransaction(statementDate, "Finance Charges", amount,
+                        statementDate);
                 transactions.add(txn);
             }
 
         }
-        
-        
+
     }
 
     /*
-    * The format of extracted text is as follow:
-    * 
-    * << other contents >>
-    * ######-#-##-#######-ACCOUNTHOLDERNAME
-    * InstallmentPurchase: (in some cases only)
-    * Month##Month##MerchantName:(##Mos.)###,###.##
-    * InstallmentAmortization: (in some cases only)
-    * (start of transaction listing to extract)
-    * << transactions to extract >>
-    * S.I.P.BALANCESUMMARY
-    * << installment transaction details >>
-    */
+     * The format of extracted text is as follow:
+     * 
+     * << other contents >> ######-#-##-#######-ACCOUNTHOLDERNAME
+     * InstallmentPurchase: (in some cases only)
+     * Month##Month##MerchantName:(##Mos.)###,###.## InstallmentAmortization: (in
+     * some cases only) (start of transaction listing to extract) << transactions to
+     * extract >> S.I.P.BALANCESUMMARY << installment transaction details >>
+     */
     private String extractTransactionsOnly() {
         String delimiterRegex = "\\d{6}-\\d{1}-\\d{2}-\\d{7}-\\S*\\s";
         Pattern p = Pattern.compile(delimiterRegex);
@@ -340,7 +351,7 @@ public class BPICreditStatement extends CreditStatement {
         if (m.find()) {
             String intermediate = p.split(rawString)[1];
 
-            if (intermediate.contains("InstallmentAmortization:")){
+            if (intermediate.contains("InstallmentAmortization:")) {
 
                 return intermediate.split("InstallmentAmortization:")[1];
 
@@ -348,7 +359,7 @@ public class BPICreditStatement extends CreditStatement {
 
                 Pattern inmt = Pattern.compile("\\(\\d{1,3}Mos.\\)(\\d{1,3},)*\\d{1,3}\\.\\d\\d");
                 Matcher inmtMatcher = inmt.matcher(intermediate);
-                
+
                 int startIndex = 0;
                 while (inmtMatcher.find()) {
                     startIndex = inmtMatcher.end();
@@ -356,10 +367,9 @@ public class BPICreditStatement extends CreditStatement {
 
                 return intermediate.substring(startIndex);
 
-            } 
+            }
 
             return intermediate;
-
 
         } else if (rawString.contains("UnbilledInstallmentAmount")) {
 
@@ -368,11 +378,12 @@ public class BPICreditStatement extends CreditStatement {
 
             int lastIndex = 0;
 
-            while(lastLineMatcher.find()) {
+            while (lastLineMatcher.find()) {
                 lastIndex = lastLineMatcher.end();
             }
 
-            if (lastIndex == rawString.length()) return "";
+            if (lastIndex == rawString.length())
+                return "";
 
         }
 
@@ -381,13 +392,16 @@ public class BPICreditStatement extends CreditStatement {
     }
 
     /**
-     * Extracts the Installment Details from the preprocessed {@link #rawString}
-     * and adds extracted transactions to the {@link #installmentTxns} field.
-     * @throws IllegalStateException when the patterns for Installment Details is not found 
+     * Extracts the Installment Details from the preprocessed {@link #rawString} and
+     * adds extracted transactions to the {@link #installmentTxns} field.
+     * 
+     * @throws IllegalStateException when the patterns for Installment Details is
+     *                               not found
      */
     public void extractInstallmentDetails() {
 
-        if (!rawString.contains("S.I.P.BALANCESUMMARY")) return;
+        if (!rawString.contains("S.I.P.BALANCESUMMARY"))
+            return;
 
         String transactionsOnly = extractTransactionsOnly().split("S.I.P.BALANCESUMMARY")[1];
 
@@ -396,14 +410,15 @@ public class BPICreditStatement extends CreditStatement {
             Pattern p = Pattern.compile(installmentRegex);
             Matcher matcher = p.matcher(transactionsOnly);
 
-            while (matcher.find()){
+            while (matcher.find()) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMddyy");
                 LocalDate txnDate = LocalDate.parse(matcher.group(1), formatter);
                 LocalDate lastPaymentDate = LocalDate.parse(matcher.group(2), formatter);
                 String description = matcher.group(3);
                 double amount = parseAmount(matcher.group(4));
                 double bal = parseAmount(matcher.group(6));
-                AbstractTransaction txn = new InstallmentTransaction(txnDate, description, amount, lastPaymentDate, bal);
+                AbstractTransaction txn = new InstallmentTransaction(txnDate, description, amount, lastPaymentDate,
+                        bal);
                 installmentTxns.add(txn);
             }
 
@@ -415,8 +430,9 @@ public class BPICreditStatement extends CreditStatement {
     }
 
     /**
-     * Extracts the Unbilled Installment Amount from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #unbilledInstallmentAmt} field.
+     * Extracts the Unbilled Installment Amount from the preprocessed
+     * {@link #rawString} and assigns the extracted value to the
+     * {@link #unbilledInstallmentAmt} field.
      */
     public void extractUnbilledInstallment() {
 
@@ -429,13 +445,14 @@ public class BPICreditStatement extends CreditStatement {
             return;
         }
 
-        throw new IllegalStateException("Cannot find Unbilled Installment Amount from extracted text. Check updates in statement format");
+        throw new IllegalStateException(
+                "Cannot find Unbilled Installment Amount from extracted text. Check updates in statement format");
 
     }
-    
+
     @Override
     public void saveToSpreadSheet(Path p) {
-        
+
         Workbook wb = new XSSFWorkbook();
         Sheet summarySheet = wb.createSheet("Summary");
         Sheet detailsSheet = wb.createSheet("Transactions");
@@ -449,7 +466,7 @@ public class BPICreditStatement extends CreditStatement {
         enterDetails(detailsSheet, contentStyle);
         enterInstallmentData(installmentSheet, contentStyle);
 
-        try (OutputStream fileOut = Files.newOutputStream(p, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {            
+        try (OutputStream fileOut = Files.newOutputStream(p, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             wb.write(fileOut);
             wb.close();
         } catch (IOException e) {

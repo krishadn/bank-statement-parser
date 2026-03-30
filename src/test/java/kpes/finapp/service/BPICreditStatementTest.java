@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -58,16 +59,19 @@ public class BPICreditStatementTest {
         mockExtractor = mock(PDFBoxExtractor.class);
     }
 
-    /* ====================== Tests for extractStatementText ====================== */
-    
+    /*
+     * ====================== Tests for extractStatementText ======================
+     */
+
     @Test
     void testExtractStatementTextCaseNonExisting() {
-        
+
         // Arrange
         Path p = Paths.get("nonexistent.pdf");
 
         // Act and Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> bpicc.extractStatementText(p, mockExtractor));
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> bpicc.extractStatementText(p, mockExtractor));
         assertTrue(exception.getMessage().contains("does not exist"));
 
     }
@@ -79,24 +83,25 @@ public class BPICreditStatementTest {
         Path p = Files.createTempFile("statement", ".txt");
 
         // Act and Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> bpicc.extractStatementText(p, mockExtractor));
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> bpicc.extractStatementText(p, mockExtractor));
         assertTrue(exception.getMessage().contains("is not a PDF file"));
-        
+
         // Clean up
         Files.delete(p);
     }
 
-
     @Test
     void testExtractStatementTextCaseNotBankStatement() throws IOException {
-        
+
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
         when(mockExtractor.extractText(p, pwd)).thenReturn("dummy text");
 
         // Act and Assert
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> bpicc.extractStatementText(p, mockExtractor));
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> bpicc.extractStatementText(p, mockExtractor));
         assertTrue(exception.getMessage().contains("not a Bank Statement"));
 
         // Clean up
@@ -121,10 +126,9 @@ public class BPICreditStatementTest {
         Files.delete(p);
     }
 
-
     @Test
     void testExtractStatementTextCaseSuccess() throws IOException {
-        
+
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
@@ -134,23 +138,25 @@ public class BPICreditStatementTest {
         // Act
         Boolean result = bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         assertTrue(result);
         assertEquals(expected, bpicc.getRawString());
-        
+
         // Clean up
         Files.delete(p);
 
     }
 
-    
-    /* ====================== Tests for parseRawText (Integration Testing) ====================== */
+    /*
+     * ====================== Tests for parseRawText (Integration Testing)
+     * ======================
+     */
 
     @Test
     void testParseRawTextCaseGeneral() throws IOException {
 
         // post conditions to test
-        // IMPORTANT ensure all functions are called      
+        // IMPORTANT ensure all functions are called
 
         // Arrange
         BPICreditStatementWrapper mockBpiCc = mock(BPICreditStatementWrapper.class);
@@ -165,7 +171,7 @@ public class BPICreditStatementTest {
         doNothing().when(mockBpiCc).extractTransactionList();
         when(mockBpiCc.isBalanced()).thenReturn(true);
         when(mockBpiCc.isTransactionComplete()).thenReturn(true);
-        
+
         doCallRealMethod().when(mockBpiCc).parseRawText();
 
         // Act
@@ -186,7 +192,7 @@ public class BPICreditStatementTest {
 
     }
 
-    //TODO integration testing
+    // TODO integration testing
     @Test
     void testParseRawTextCaseZeroBeginningNoTransactions() {
 
@@ -204,7 +210,7 @@ public class BPICreditStatementTest {
 
     }
 
-    //TODO integration testing
+    // TODO integration testing
     @Test
     void testParseRawTextCaseWithBeginningAndTransactions() {
 
@@ -217,12 +223,13 @@ public class BPICreditStatementTest {
         // 5. ending is equal to the amount in the raw text
         // 6. transaction list is not empty
         // 7. minAmtDue is equal to the amount in the raw text
-        // 8. statement date and due date should not be equal, should be the same in the raw text
+        // 8. statement date and due date should not be equal, should be the same in the
+        // raw text
         // 9. rawString is preprocessed
 
     }
 
-    //TODO integration testing
+    // TODO integration testing
     @Test
     void testParseRawTextCaseStatementNotBalanced() {
 
@@ -234,7 +241,6 @@ public class BPICreditStatementTest {
 
     }
 
-    
     /* ====================== Tests for preprocessRawText ====================== */
 
     @Test
@@ -250,16 +256,17 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.preprocessRawText();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getRawString());
-        
+
         // Clean up
         Files.delete(p);
 
     }
 
-
-    /* ====================== Tests for extractStatementDate ====================== */
+    /*
+     * ====================== Tests for extractStatementDate ======================
+     */
 
     @Test
     void testExtractStatementDateCasePatternFoundTwoDigitDate() throws IOException {
@@ -267,8 +274,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " STATEMENTDATEOCTOBER30,2025 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " STATEMENTDATEOCTOBER30,2025 ";
         LocalDate expected = LocalDate.of(2025, 10, 30);
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -276,9 +283,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractStatementDate();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getStatementDate());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -290,8 +297,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " STATEMENTDATEOCTOBER4,2025 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " STATEMENTDATEOCTOBER4,2025 ";
         LocalDate expected = LocalDate.of(2025, 10, 4);
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -299,9 +306,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractStatementDate();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getStatementDate());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -313,8 +320,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " STATEMENTDATEJANUARY04,2025 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " STATEMENTDATEJANUARY04,2025 ";
         LocalDate expected = LocalDate.of(2025, 1, 4);
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -322,9 +329,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractStatementDate();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getStatementDate());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -338,32 +345,31 @@ public class BPICreditStatementTest {
         String pwd = "";
         String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >";
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
-        LocalDate expected = bpicc.getStatementDate();        
+        LocalDate expected = bpicc.getStatementDate();
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractStatementDate());
         assertTrue(exception.getMessage().contains("Statement Date"));
         assertEquals(expected, bpicc.getStatementDate());
-        
+
         // Clean up
         Files.delete(p);
-        
-    }
 
+    }
 
     /* ====================== Tests for extractDueDate ====================== */
 
     @Test
     void testExtractDueDateCasePatternFoundOneDigitDate() throws IOException {
-        
+
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " PAYMENTDUEDATENOVEMBER1,2025 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " PAYMENTDUEDATENOVEMBER1,2025 ";
         LocalDate expected = LocalDate.of(2025, 11, 1);
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -371,9 +377,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractDueDate();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getDueDate());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -381,12 +387,12 @@ public class BPICreditStatementTest {
 
     @Test
     void testExtractDueDateCasePatternFoundTwoDigitDate() throws IOException {
-        
+
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " PAYMENTDUEDATENOVEMBER12,2025 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " PAYMENTDUEDATENOVEMBER12,2025 ";
         LocalDate expected = LocalDate.of(2025, 11, 12);
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -394,9 +400,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractDueDate();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getDueDate());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -415,16 +421,15 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractDueDate());
         assertTrue(exception.getMessage().contains("Due Date"));
         assertEquals(expected, bpicc.getDueDate());
-        
+
         // Clean up
         Files.delete(p);
-        
-    }
 
+    }
 
     /* ====================== Tests for extractMinAmtDue ====================== */
 
@@ -434,8 +439,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " MINIMUMAMOUNTDUE850.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " MINIMUMAMOUNTDUE850.00 ";
         double expected = 850;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -443,12 +448,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractMinAmtDue();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getMinAmountDue());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -458,8 +462,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " MINIMUMAMOUNTDUE1,850.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " MINIMUMAMOUNTDUE1,850.00 ";
         double expected = 1850;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -467,12 +471,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractMinAmtDue();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getMinAmountDue());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -482,8 +485,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " MINIMUMAMOUNTDUE1,100,850.65 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " MINIMUMAMOUNTDUE1,100,850.65 ";
         double expected = 1100850.65;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -491,15 +494,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractMinAmtDue();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getMinAmountDue());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractMinAmtDueCasePatternNotFound() throws IOException {
@@ -514,18 +515,20 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractMinAmtDue());
         assertTrue(exception.getMessage().contains("Minimum Amount Due"));
         assertEquals(expected, bpicc.getMinAmountDue());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
-
-    /* ====================== Tests for extractPreviousBalance ====================== */
+    /*
+     * ====================== Tests for extractPreviousBalance
+     * ======================
+     */
 
     @Test
     void testExtractPreviousBalanceCasePatternFoundHundred() throws IOException {
@@ -533,8 +536,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " PreviousBalance500.25 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " PreviousBalance500.25 ";
         double expected = 500.25;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -542,12 +545,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractPreviousBalance();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getBeginningBalance());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -557,8 +559,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " PreviousBalance20,001.62 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " PreviousBalance20,001.62 ";
         double expected = 20001.62;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -566,15 +568,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractPreviousBalance();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getBeginningBalance());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractPreviousBalanceCasePatternFoundMillion() throws IOException {
@@ -582,8 +582,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " PreviousBalance12,320,001.62 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " PreviousBalance12,320,001.62 ";
         double expected = 12320001.62;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -591,15 +591,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractPreviousBalance();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getBeginningBalance());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractPreviousBalanceCasePatternNotFound() throws IOException {
@@ -614,18 +612,19 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractPreviousBalance());
         assertTrue(exception.getMessage().contains("Previous Balance"));
         assertEquals(expected, bpicc.getBeginningBalance());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
-
-    /* ====================== Tests for extractTotalCredits ====================== */
+    /*
+     * ====================== Tests for extractTotalCredits ======================
+     */
 
     @Test
     void testExtractTotalCreditsCasePatternFoundAllZero() throws IOException {
@@ -633,8 +632,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.000.000.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.000.000.000.000.00 ";
         double expected = 0;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -642,12 +641,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -657,8 +655,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.27300.550.000.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.27300.550.000.000.000.00 ";
         double expected = 300.55;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -666,12 +664,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -681,8 +678,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.2712,300.550.000.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.2712,300.550.000.000.000.00 ";
         double expected = 12300.55;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -690,12 +687,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -705,8 +701,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.00456.780.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.00456.780.000.000.00 ";
         double expected = 456.78;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -714,12 +710,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -729,8 +724,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.0023,456.780.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.0023,456.780.000.000.00 ";
         double expected = 23456.78;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -738,12 +733,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -753,8 +747,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.000.00567.890.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.000.00567.890.000.00 ";
         double expected = 567.89;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -762,12 +756,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -777,8 +770,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.000.0034,567.890.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.000.0034,567.890.000.00 ";
         double expected = 34567.89;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -786,12 +779,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -801,8 +793,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.000.000.00789.120.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.000.000.00789.120.00 ";
         double expected = 789.12;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -810,15 +802,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractTotalCreditsCasePatternFoundWithThousandLC() throws IOException {
@@ -826,8 +816,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.270.000.000.0056,789.120.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.270.000.000.0056,789.120.00 ";
         double expected = 56789.12;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -835,12 +825,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -850,21 +839,20 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.27123.45345.6712.34789.120.00 ";
-        double expected = 123.45+345.67+12.34+789.12;
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.27123.45345.6712.34789.120.00 ";
+        double expected = 123.45 + 345.67 + 12.34 + 789.12;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -874,24 +862,22 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2722,222.27789,123.4512,345.6789,012.3456,789.120.00 ";
-        double expected = 789123.45+12345.67+89012.34+56789.12;
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2722,222.27789,123.4512,345.6789,012.3456,789.120.00 ";
+        double expected = 789123.45 + 12345.67 + 89012.34 + 56789.12;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalCredits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractTotalCreditsCasePatternNotFound() throws IOException {
@@ -906,16 +892,15 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTotalCredits());
         assertTrue(exception.getMessage().contains("Total Credits"));
         assertEquals(expected, bpicc.getTotalCredits());
-        
+
         // Clean up
         Files.delete(p);
-        
-    }
 
+    }
 
     /* ====================== Tests for extractTotalDebits ====================== */
 
@@ -925,8 +910,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.270.000.000.000.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.270.000.000.000.000.000.00 ";
         double expected = 0;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -934,12 +919,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalDebits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalDebits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -949,8 +933,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.27989.78300.550.000.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.27989.78300.550.000.000.000.00 ";
         double expected = 989.78;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -958,12 +942,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalDebits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalDebits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -973,8 +956,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " Total22,222.2720,356.9812,300.550.000.000.000.00 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " Total22,222.2720,356.9812,300.550.000.000.000.00 ";
         double expected = 20356.98;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -982,12 +965,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalDebits();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTotalDebits());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -1004,18 +986,19 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTotalDebits());
         assertTrue(exception.getMessage().contains("Total Debits"));
         assertEquals(expected, bpicc.getTotalDebits());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
-
-    /* ====================== Tests for extractTotalAmountDue ====================== */
+    /*
+     * ====================== Tests for extractTotalAmountDue ======================
+     */
 
     @Test
     void testExtractTotalAmountDueCasePatternFoundHundred() throws IOException {
@@ -1023,8 +1006,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " TOTALAMOUNTDUE345.67 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " TOTALAMOUNTDUE345.67 ";
         double expected = 345.67;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1032,12 +1015,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalAmountDue();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getEndingBalance());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -1047,8 +1029,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " TOTALAMOUNTDUE54,321.01 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " TOTALAMOUNTDUE54,321.01 ";
         double expected = 54321.01;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1056,15 +1038,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalAmountDue();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getEndingBalance());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractTotalAmountDueCasePatternFoundMillion() throws IOException {
@@ -1072,8 +1052,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " TOTALAMOUNTDUE12,345,543.21 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " TOTALAMOUNTDUE12,345,543.21 ";
         double expected = 12345543.21;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1081,15 +1061,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTotalAmountDue();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getEndingBalance());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractTotalAmountCasePatternNotFound() throws IOException {
@@ -1104,338 +1082,333 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTotalAmountDue());
         assertTrue(exception.getMessage().contains("Total Amount Due"));
         assertEquals(expected, bpicc.getEndingBalance());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
-
-    /* ====================== Tests for extractTransactionList ====================== */
+    /*
+     * ====================== Tests for extractTransactionList
+     * ======================
+     */
 
     @Test
-    void testExtractTransactionListCasePatternFoundNoInstallment() throws IOException {
+    void testExtractTransactionListCasePatternFoundNoInstallment()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
 
         List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTransactions());
-        
+
         // Clean up
         Files.delete(p);
 
     }
 
     @Test
-    void testExtractTransactionListCasePatternFoundInstallmentPurchase() throws IOException {
+    void testExtractTransactionListCasePatternFoundInstallmentPurchase()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentPurchase:\n" +
-                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
-                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentPurchase:\n"
+                + "January20January30MerchantName1234:(60Mos.)999,999,999.99\n"
+                + "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
 
         List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTransactions());
-        
-        // Clean up
-        Files.delete(p);
 
-
-    }
-
-    @Test
-    void testExtractTransactionListCasePatternFoundInstallmentAmortization() throws IOException {
-
-        // Arrange
-        Path p = Files.createTempFile("statement", ".pdf");
-        String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/03999,999,999.99\n" +
-                        "January25January31MerchantName1234Loc:15/6099,999,999,999.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), 
-                                                        "MerchantName1234Loc:01/03", 999999999.99, 
-                                                        LocalDate.of(2025, 1, 30));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Loc:15/60", 99999999999.99, 
-                                                        LocalDate.of(2025, 1, 31));                                                        
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
-
-        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
-
-        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
-
-        // Act
-        bpicc.extractStatementText(p, mockExtractor);
-        bpicc.extractTransactionList();
-
-        //Assert
-        assertEquals(expected, bpicc.getTransactions());
-        
         // Clean up
         Files.delete(p);
 
     }
 
     @Test
-    void testExtractTransactionListCasePatternFoundInstallmentPurchaseAndAmortization() throws IOException {
+    void testExtractTransactionListCasePatternFoundInstallmentAmortization()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentPurchase:\n" +
-                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
-                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/0387,654.32\n" +
-                        "January25January31MerchantName1234Loc:15/60123,456.78\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), 
-                                                        "MerchantName1234Loc:01/03", 87654.32, 
-                                                        LocalDate.of(2025, 1, 30));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Loc:15/60", 123456.78, 
-                                                        LocalDate.of(2025, 1, 31));                                                        
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/03999,999,999.99\n"
+                + "January25January31MerchantName1234Loc:15/6099,999,999,999.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), "MerchantName1234Loc:01/03",
+                999999999.99, LocalDate.of(2025, 1, 30));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Loc:15/60",
+                99999999999.99, LocalDate.of(2025, 1, 31));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
 
-        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
+        List<CreditTransaction> expected = new ArrayList<>(
+                Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTransactions());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
     @Test
-    void testExtractTransactionListCasePatternFoundSIPDetails() throws IOException {
+    void testExtractTransactionListCasePatternFoundInstallmentPurchaseAndAmortization()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentPurchase:\n" +
-                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
-                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
-                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n" +
-                        "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), 
-                                                        "MerchantName1234Loc:01/03", 78901.23, 
-                                                        LocalDate.of(2025, 1, 30));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Loc:15/60", 45678.99, 
-                                                        LocalDate.of(2025, 1, 31));                                                        
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentPurchase:\n"
+                + "January20January30MerchantName1234:(60Mos.)999,999,999.99\n"
+                + "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/0387,654.32\n"
+                + "January25January31MerchantName1234Loc:15/60123,456.78\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), "MerchantName1234Loc:01/03",
+                87654.32, LocalDate.of(2025, 1, 30));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Loc:15/60",
+                123456.78, LocalDate.of(2025, 1, 31));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
 
-        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
-
+        List<CreditTransaction> expected = new ArrayList<>(
+                Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTransactions());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
     @Test
-    void testExtractTransactionListCaseNoDelimiterFound() throws IOException {
+    void testExtractTransactionListCasePatternFoundSIPDetails()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "UnbilledInstallmentAmount0.00\n" +
-                        // "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentPurchase:\n" +
-                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
-                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
-                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n" +
-                        "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentPurchase:\n"
+                + "January20January30MerchantName1234:(60Mos.)999,999,999.99\n"
+                + "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/0378,901.23\n"
+                + "January25January31MerchantName1234Loc:15/6045,678.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n" + "S.I.P.BALANCESUMMARY\n"
+                + "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 20), "MerchantName1234Loc:01/03",
+                78901.23, LocalDate.of(2025, 1, 30));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Loc:15/60",
+                45678.99, LocalDate.of(2025, 1, 31));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
+
+        List<CreditTransaction> expected = new ArrayList<>(
+                Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
+
+        // Act
+        bpicc.extractStatementText(p, mockExtractor);
+        bpicc.extractTransactionList();
+
+        // Assert
+        assertEquals(expected, bpicc.getTransactions());
+
+        // Clean up
+        Files.delete(p);
+
+    }
+
+    @Test
+    void testExtractTransactionListCaseNoDelimiterFound()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
+
+        // Arrange
+        Path p = Files.createTempFile("statement", ".pdf");
+        String pwd = "";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "UnbilledInstallmentAmount0.00\n" +
+                // "123456-7-89-0123456-GABRIELASILANG \n" +
+                "InstallmentPurchase:\n" + "January20January30MerchantName1234:(60Mos.)999,999,999.99\n"
+                + "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/0378,901.23\n"
+                + "January25January31MerchantName1234Loc:15/6045,678.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n" + "S.I.P.BALANCESUMMARY\n"
+                + "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+
+        when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTransactionList());
         assertTrue(exception.getMessage().contains("Cannot split"));
         assertTrue(bpicc.getTransactions().isEmpty());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
     @Test
-    void testExtractTransactionListCaseNoTransactionPatternFound() throws IOException {
+    void testExtractTransactionListCaseNoTransactionPatternFound()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "UnbilledInstallmentAmount0.00\n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "January20,2025January30,2025MerchantName1234Loc:01/0378,901.23\n" +
-                        "MerchantName1234Loc:01/0378,901.23\n" +
-                        "MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "MerchantName1234Location301,000.45\n" +
-                        "MerchantName1234Location568.25\n" +
-                        "MerchantName1234Location2,345,678.09\n" +
-                        "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "UnbilledInstallmentAmount0.00\n" + "123456-7-89-0123456-GABRIELASILANG \n"
+                + "January20,2025January30,2025MerchantName1234Loc:01/0378,901.23\n"
+                + "MerchantName1234Loc:01/0378,901.23\n" + "MerchantName1234Loc:15/6045,678.99\n"
+                + "MerchantName1234Location301,000.45\n" + "MerchantName1234Location568.25\n"
+                + "MerchantName1234Location2,345,678.09\n" + "S.I.P.BALANCESUMMARY\n"
+                + "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractTransactionList());
         assertTrue(exception.getMessage().contains("Transaction Pattern"));
         assertTrue(bpicc.getTransactions().isEmpty());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
-    
     @Test
-    void testExtractTransactionListCaseNoTransaction() throws IOException {
+    void testExtractTransactionListCaseNoTransaction()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
 
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "UnbilledInstallmentAmount0.00";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "UnbilledInstallmentAmount0.00";
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
+        Field field = bpicc.getClass().getSuperclass().getSuperclass().getDeclaredField("statementDate");
+        field.setAccessible(true);
+        field.set(bpicc, LocalDate.of(2025, 1, 30));
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertTrue(bpicc.getTransactions().isEmpty());
         assertDoesNotThrow(() -> bpicc.extractTransactionList());
-        
+
         // Clean up
         Files.delete(p);
-        
 
     }
 
@@ -1445,35 +1418,27 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "STATEMENTDATEFEBRUARY04,2025\n" +
-                        "January15January15LateCharges1,234.56\n" +
-                        "January5January5Payment-ThankYou-12,345.66\n" +
-                        "FinanceCharge789.01\n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
-        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 5), 
-                                                        "Payment", -12345.66, 
-                                                        LocalDate.of(2025, 1, 5));
-        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 15), 
-                                                        "Late Charges", 1234.56, 
-                                                        LocalDate.of(2025, 1, 15));
-        CreditTransaction expectedT6 = new CreditTransaction(LocalDate.of(2025, 2, 4), 
-                                                        "Finance Charges", 789.01, 
-                                                        LocalDate.of(2025, 2, 4));
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "STATEMENTDATEFEBRUARY04,2025\n" + "January15January15LateCharges1,234.56\n"
+                + "January5January5Payment-ThankYou-12,345.66\n" + "FinanceCharge789.01\n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
+        CreditTransaction expectedT4 = new CreditTransaction(LocalDate.of(2025, 1, 5), "Payment", -12345.66,
+                LocalDate.of(2025, 1, 5));
+        CreditTransaction expectedT5 = new CreditTransaction(LocalDate.of(2025, 1, 15), "Late Charges", 1234.56,
+                LocalDate.of(2025, 1, 15));
+        CreditTransaction expectedT6 = new CreditTransaction(LocalDate.of(2025, 2, 4), "Finance Charges", 789.01,
+                LocalDate.of(2025, 2, 4));
 
-        List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5, expectedT6));
+        List<CreditTransaction> expected = new ArrayList<>(
+                Arrays.asList(expectedT1, expectedT2, expectedT3, expectedT4, expectedT5, expectedT6));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1482,9 +1447,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementDate();
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTransactions());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -1496,22 +1461,17 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "STATEMENTDATEFEBRUARY04,2025\n" +
-                        "FinanceCharge0.00\n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n";
-        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), 
-                                                        "MerchantName1234Location", 301000.45, 
-                                                        LocalDate.of(2025, 1, 2));
-        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), 
-                                                        "MerchantName1234Location", 568.25, 
-                                                        LocalDate.of(2025, 1, 14));
-        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), 
-                                                        "MerchantName1234Location", 2345678.09, 
-                                                        LocalDate.of(2025, 1, 27));
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "STATEMENTDATEFEBRUARY04,2025\n" + "FinanceCharge0.00\n" + "123456-7-89-0123456-GABRIELASILANG \n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n";
+        CreditTransaction expectedT1 = new CreditTransaction(LocalDate.of(2025, 1, 1), "MerchantName1234Location",
+                301000.45, LocalDate.of(2025, 1, 2));
+        CreditTransaction expectedT2 = new CreditTransaction(LocalDate.of(2025, 1, 13), "MerchantName1234Location",
+                568.25, LocalDate.of(2025, 1, 14));
+        CreditTransaction expectedT3 = new CreditTransaction(LocalDate.of(2025, 1, 25), "MerchantName1234Location",
+                2345678.09, LocalDate.of(2025, 1, 27));
 
         List<CreditTransaction> expected = new ArrayList<>(Arrays.asList(expectedT1, expectedT2, expectedT3));
 
@@ -1522,15 +1482,28 @@ public class BPICreditStatementTest {
         bpicc.extractStatementDate();
         bpicc.extractTransactionList();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getTransactions());
-        
+
         // Clean up
         Files.delete(p);
 
     }
 
-    /* ====================== Tests for extractInstallmentDetails ====================== */
+    @Test
+    void testExtractTransactionListCaseNullStatementDate()
+            throws IOException, NoSuchFieldException, IllegalAccessException {
+
+        Error error = assertThrows(AssertionError.class, () -> bpicc.extractTransactionList());
+        assertTrue(error.getMessage().contains("Statement Date"));
+        assertTrue(bpicc.getTransactions().isEmpty());
+
+    }
+
+    /*
+     * ====================== Tests for extractInstallmentDetails
+     * ======================
+     */
 
     @Test
     void testExtractInstallmentDetailsCaseNoSIP() throws IOException {
@@ -1538,20 +1511,17 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentPurchase:\n" +
-                        "January20January30MerchantName1234:(60Mos.)999,999,999.99\n" +
-                        "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
-                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n" +
-                        // "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
-
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentPurchase:\n"
+                + "January20January30MerchantName1234:(60Mos.)999,999,999.99\n"
+                + "January25January31MerchantName1234:(3Mos.)99,999,999,999.99\n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/0378,901.23\n"
+                + "January25January31MerchantName1234Loc:15/6045,678.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n" +
+                // "S.I.P.BALANCESUMMARY\n" +
+                "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1559,9 +1529,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractInstallmentDetails();
 
-        //Assert
+        // Assert
         assertTrue(bpicc.getInstallmentTxns().isEmpty());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -1573,20 +1543,18 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
-                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n" +
-                        "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining" +
-                        "120524113027Merchant123NameInstal123,456.78234,567.89";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/0378,901.23\n"
+                + "January25January31MerchantName1234Loc:15/6045,678.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n" + "S.I.P.BALANCESUMMARY\n"
+                + "TransactionLastPaymentDescriptionPurchaseAmountRemaining"
+                + "120524113027Merchant123NameInstal123,456.78234,567.89";
 
-        InstallmentTransaction expected1 = new InstallmentTransaction(LocalDate.of(2024, 12, 5), "Merchant123NameInstal", 
-                                                                123456.78, LocalDate.of(2027, 11, 30), 234567.89);
+        InstallmentTransaction expected1 = new InstallmentTransaction(LocalDate.of(2024, 12, 5),
+                "Merchant123NameInstal", 123456.78, LocalDate.of(2027, 11, 30), 234567.89);
         List<AbstractTransaction> expected = new ArrayList<>(Arrays.asList(expected1));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
@@ -1595,9 +1563,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractInstallmentDetails();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getInstallmentTxns());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -1609,26 +1577,24 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "InstallmentAmortization:\n" +
-                        "January20January30MerchantName1234Loc:01/0378,901.23\n" +
-                        "January25January31MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "January1January2MerchantName1234Location301,000.45\n" +
-                        "January13January14MerchantName1234Location568.25\n" +
-                        "January25January27MerchantName1234Location2,345,678.09\n" +
-                        "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining" +
-                        "120524113027Merchant123NameInstal123,456.78234,567.89\n" +
-                        "010209100220Merchant123NameInstal23,456.7834,567.89\n" +
-                        "030502012409Merchant123NameInstal456.78567.89\n";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "123456-7-89-0123456-GABRIELASILANG \n" + "InstallmentAmortization:\n"
+                + "January20January30MerchantName1234Loc:01/0378,901.23\n"
+                + "January25January31MerchantName1234Loc:15/6045,678.99\n"
+                + "January1January2MerchantName1234Location301,000.45\n"
+                + "January13January14MerchantName1234Location568.25\n"
+                + "January25January27MerchantName1234Location2,345,678.09\n" + "S.I.P.BALANCESUMMARY\n"
+                + "TransactionLastPaymentDescriptionPurchaseAmountRemaining"
+                + "120524113027Merchant123NameInstal123,456.78234,567.89\n"
+                + "010209100220Merchant123NameInstal23,456.7834,567.89\n"
+                + "030502012409Merchant123NameInstal456.78567.89\n";
 
-        InstallmentTransaction expected1 = new InstallmentTransaction(LocalDate.of(2024, 12, 5), "Merchant123NameInstal", 
-                                                                123456.78, LocalDate.of(2027, 11, 30), 234567.89);
-        InstallmentTransaction expected2 = new InstallmentTransaction(LocalDate.of(2009, 1, 2), "Merchant123NameInstal", 
-                                                                23456.78, LocalDate.of(2020, 10, 02), 34567.89);
-        InstallmentTransaction expected3 = new InstallmentTransaction(LocalDate.of(2002, 3, 5), "Merchant123NameInstal", 
-                                                                456.78, LocalDate.of(2009, 1, 24), 567.89);                                                                                                                
+        InstallmentTransaction expected1 = new InstallmentTransaction(LocalDate.of(2024, 12, 5),
+                "Merchant123NameInstal", 123456.78, LocalDate.of(2027, 11, 30), 234567.89);
+        InstallmentTransaction expected2 = new InstallmentTransaction(LocalDate.of(2009, 1, 2), "Merchant123NameInstal",
+                23456.78, LocalDate.of(2020, 10, 02), 34567.89);
+        InstallmentTransaction expected3 = new InstallmentTransaction(LocalDate.of(2002, 3, 5), "Merchant123NameInstal",
+                456.78, LocalDate.of(2009, 1, 24), 567.89);
         List<AbstractTransaction> expected = new ArrayList<>(Arrays.asList(expected1, expected2, expected3));
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
@@ -1637,9 +1603,9 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractInstallmentDetails();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getInstallmentTxns());
-        
+
         // Clean up
         Files.delete(p);
 
@@ -1651,35 +1617,33 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n" +
-                        "UnbilledInstallmentAmount0.00\n" +
-                        "123456-7-89-0123456-GABRIELASILANG \n" +
-                        "January20,2025January30,2025MerchantName1234Loc:01/0378,901.23\n" +
-                        "MerchantName1234Loc:01/0378,901.23\n" +
-                        "MerchantName1234Loc:15/6045,678.99\n" +                        
-                        "MerchantName1234Location301,000.45\n" +
-                        "MerchantName1234Location568.25\n" +
-                        "MerchantName1234Location2,345,678.09\n" +
-                        "S.I.P.BALANCESUMMARY\n" +
-                        "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > > \n"
+                + "UnbilledInstallmentAmount0.00\n" + "123456-7-89-0123456-GABRIELASILANG \n"
+                + "January20,2025January30,2025MerchantName1234Loc:01/0378,901.23\n"
+                + "MerchantName1234Loc:01/0378,901.23\n" + "MerchantName1234Loc:15/6045,678.99\n"
+                + "MerchantName1234Location301,000.45\n" + "MerchantName1234Location568.25\n"
+                + "MerchantName1234Location2,345,678.09\n" + "S.I.P.BALANCESUMMARY\n"
+                + "TransactionLastPaymentDescriptionPurchaseAmountRemaining";
 
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractInstallmentDetails());
         assertTrue(exception.getMessage().contains("Installment Details Pattern"));
         assertTrue(bpicc.getInstallmentTxns().isEmpty());
-        
+
         // Clean up
         Files.delete(p);
-        
+
     }
 
-
-    /* ====================== Tests for extractUnbilledInstallment ====================== */
+    /*
+     * ====================== Tests for extractUnbilledInstallment
+     * ======================
+     */
 
     @Test
     void testExtractUnbilledInstallmentCasePatternFoundHundreds() throws IOException {
@@ -1687,8 +1651,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " UnbilledInstallmentAmount543.21 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " UnbilledInstallmentAmount543.21 ";
         double expected = 543.21;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1696,12 +1660,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractUnbilledInstallment();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -1711,8 +1674,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " UnbilledInstallmentAmount345,543.21 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " UnbilledInstallmentAmount345,543.21 ";
         double expected = 345543.21;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1720,12 +1683,11 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractUnbilledInstallment();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
-        
+
         // Clean up
         Files.delete(p);
-
 
     }
 
@@ -1735,8 +1697,8 @@ public class BPICreditStatementTest {
         // Arrange
         Path p = Files.createTempFile("statement", ".pdf");
         String pwd = "";
-        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >" +
-                        " UnbilledInstallmentAmount12,345,543.21 ";
+        String content = " < < o t h e r c o n t e n t > >  Statement of Account  < < o t h e r  c o n t e n t > >"
+                + " UnbilledInstallmentAmount12,345,543.21 ";
         double expected = 12345543.21;
         when(mockExtractor.extractText(p, pwd)).thenReturn(content);
 
@@ -1744,15 +1706,13 @@ public class BPICreditStatementTest {
         bpicc.extractStatementText(p, mockExtractor);
         bpicc.extractUnbilledInstallment();
 
-        //Assert
+        // Assert
         assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
-        
+
         // Clean up
         Files.delete(p);
 
-
     }
-
 
     @Test
     void testExtractUnbilledInstallmentCasePatternNotFound() throws IOException {
@@ -1767,15 +1727,14 @@ public class BPICreditStatementTest {
         // Act
         bpicc.extractStatementText(p, mockExtractor);
 
-        //Assert
+        // Assert
         Exception exception = assertThrows(IllegalStateException.class, () -> bpicc.extractUnbilledInstallment());
         assertTrue(exception.getMessage().contains("Unbilled Installment Amount"));
         assertEquals(expected, bpicc.getUnbilledInstallmentAmt());
-        
+
         // Clean up
         Files.delete(p);
-        
-    }
 
+    }
 
 }

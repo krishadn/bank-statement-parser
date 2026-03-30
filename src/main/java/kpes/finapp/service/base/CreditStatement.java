@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 /**
  * Base class for credit card statements
+ * 
  * @author Krizzia Santillan
  */
 public abstract class CreditStatement extends AbstractStatement {
@@ -13,22 +14,22 @@ public abstract class CreditStatement extends AbstractStatement {
     // date fields
     protected LocalDate statementDate;
     protected LocalDate dueDate;
-    
+
     // other new fields
     protected double minAmountDue;
 
     /**
      * Constructor initializing field values
      */
-    public CreditStatement(){
+    public CreditStatement() {
         super();
-        statementDate = LocalDate.now();
-        dueDate = LocalDate.now();
+        statementDate = null;
+        dueDate = null;
         minAmountDue = 0;
     }
 
     /* Getters */
-    
+
     public LocalDate getStatementDate() {
         return statementDate;
     }
@@ -44,9 +45,9 @@ public abstract class CreditStatement extends AbstractStatement {
     /* Concrete Methods */
 
     /**
-     * Parses the {@link #rawString} and employs validity checks before 
-     * populating the fields with parsed data. Updates parsed status to true
-     * if all necessary fields are populated and validity checks are all successful.
+     * Parses the {@link #rawString} and employs validity checks before populating
+     * the fields with parsed data. Updates parsed status to true if all necessary
+     * fields are populated and validity checks are all successful.
      */
     @Override
     public void parseRawText() {
@@ -89,13 +90,11 @@ public abstract class CreditStatement extends AbstractStatement {
      */
     @Override
     protected boolean isTransactionComplete() {
-        double totalTransactions = transactions.stream()
-                                                .mapToDouble(AbstractTransaction::getAmount)
-                                                .sum();
+        double totalTransactions = transactions.stream().mapToDouble(AbstractTransaction::getAmount).sum();
 
         return totalTransactions == totalCredits - totalDebits;
     }
-    
+
     private void clearFields() {
         beginningBalance = 0;
         totalCredits = 0;
@@ -104,11 +103,10 @@ public abstract class CreditStatement extends AbstractStatement {
         transactions.clear();
         parsed = false;
 
-        statementDate = LocalDate.now();
-        dueDate = LocalDate.now();
+        statementDate = null;
+        dueDate = null;
         minAmountDue = 0;
     }
-
 
     /* Abstract Methods */
 
@@ -118,50 +116,50 @@ public abstract class CreditStatement extends AbstractStatement {
     protected abstract void preprocessRawText();
 
     /**
-     * Extracts the Statement Date from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #statementDate} field.
+     * Extracts the Statement Date from the preprocessed {@link #rawString} and
+     * assigns the extracted value to the {@link #statementDate} field.
      */
     protected abstract void extractStatementDate();
 
     /**
-     * Extracts the Due Date from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #dueDate} field.
+     * Extracts the Due Date from the preprocessed {@link #rawString} and assigns
+     * the extracted value to the {@link #dueDate} field.
      */
     protected abstract void extractDueDate();
-    
+
     /**
-     * Extracts the Minimum Amount Due from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #minAmountDue} field.
+     * Extracts the Minimum Amount Due from the preprocessed {@link #rawString} and
+     * assigns the extracted value to the {@link #minAmountDue} field.
      */
     protected abstract void extractMinAmtDue();
 
     /**
-     * Extracts the Previous Balance from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #beginningBalance} field.
+     * Extracts the Previous Balance from the preprocessed {@link #rawString} and
+     * assigns the extracted value to the {@link #beginningBalance} field.
      */
     protected abstract void extractPreviousBalance();
-    
+
     /**
-     * Extracts the Total Credits from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #totalCredits} field.
+     * Extracts the Total Credits from the preprocessed {@link #rawString} and
+     * assigns the extracted value to the {@link #totalCredits} field.
      */
     protected abstract void extractTotalCredits();
 
     /**
-     * Extracts the Total Debits from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #totalDebits} field.
+     * Extracts the Total Debits from the preprocessed {@link #rawString} and
+     * assigns the extracted value to the {@link #totalDebits} field.
      */
     protected abstract void extractTotalDebits();
 
     /**
-     * Extracts the Total Amount Due from the preprocessed {@link #rawString}
-     * and assigns the extracted value to the {@link #endingBalance} field.
+     * Extracts the Total Amount Due from the preprocessed {@link #rawString} and
+     * assigns the extracted value to the {@link #endingBalance} field.
      */
     protected abstract void extractTotalAmountDue();
 
     /**
-     * Extracts the Transaction List from the preprocessed {@link #rawString}
-     * and adds extracted transactions to the {@link #transactions} field.
+     * Extracts the Transaction List from the preprocessed {@link #rawString} and
+     * adds extracted transactions to the {@link #transactions} field.
      */
     protected abstract void extractTransactionList();
 
