@@ -9,6 +9,9 @@ import java.time.LocalDate;
  */
 public abstract class CreditStatement extends AbstractStatement {
 
+    /* Constants */
+    private static final double EPSILON = 0.000001;
+
     /* Fields */
 
     // date fields
@@ -71,6 +74,7 @@ public abstract class CreditStatement extends AbstractStatement {
         if (isBalanced() && isTransactionComplete()) {
             parsed = true;
         } else {
+            System.out.printf("isBalanced: %b ; isTransactionComplete: %b %n", isBalanced(), isTransactionComplete());
             clearFields();
             throw new AssertionError("Bank Statement has erroneous data");
         }
@@ -82,7 +86,7 @@ public abstract class CreditStatement extends AbstractStatement {
      */
     @Override
     protected boolean isBalanced() {
-        return beginningBalance + totalCredits - totalDebits == endingBalance;
+        return Math.abs(beginningBalance + totalCredits - totalDebits - endingBalance) < EPSILON;
     }
 
     /**
@@ -91,8 +95,7 @@ public abstract class CreditStatement extends AbstractStatement {
     @Override
     protected boolean isTransactionComplete() {
         double totalTransactions = transactions.stream().mapToDouble(AbstractTransaction::getAmount).sum();
-
-        return totalTransactions == totalCredits - totalDebits;
+        return Math.abs(totalTransactions - (totalCredits - totalDebits)) < EPSILON;
     }
 
     private void clearFields() {
