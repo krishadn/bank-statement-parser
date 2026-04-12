@@ -14,7 +14,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -26,13 +31,17 @@ import kpes.finapp.service.txns.InstallmentTransaction;
 
 public class BPICreditStatement extends CreditStatement {
 
+    // summary fields
     private double unbilledInstallmentAmt;
+
+    // installment details
     private List<AbstractTransaction> installmentTxns;
 
     public BPICreditStatement() {
         super();
         unbilledInstallmentAmt = 0;
         installmentTxns = new ArrayList<>();
+        type = CreditStatementType.BPICC;
     }
 
     /* Getters */
@@ -50,6 +59,17 @@ public class BPICreditStatement extends CreditStatement {
     @Override
     protected Pattern createPattern() {
         return Pattern.compile("Statement of Account");
+    }
+
+    /**
+     * {@inheritDoc} Uses additional methods to extract installment details and
+     * unbilled installment amount.
+     */
+    @Override
+    public void parseRawText() {
+        super.parseRawText();
+        extractUnbilledInstallment();
+        extractInstallmentDetails();
     }
 
     /**
@@ -260,7 +280,7 @@ public class BPICreditStatement extends CreditStatement {
         assert statementDate != null : "Statement Date must be successfully extracted before extracting transactions";
 
         // Purchases and Advances Transactions
-        String transactionsOnly = extractTransactionsOnly().split("S.I.P.BALANCESUMMARY")[0];
+        String transactionsOnly = extractTransactionsOnly().split("InstallmentBalanceSummary")[0];
 
         if (!transactionsOnly.isEmpty()) {
             String txnRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})(.+\\D{2}(:\\d{2}/\\d{2})?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
@@ -341,7 +361,7 @@ public class BPICreditStatement extends CreditStatement {
      * InstallmentPurchase: (in some cases only)
      * Month##Month##MerchantName:(##Mos.)###,###.## InstallmentAmortization: (in
      * some cases only) (start of transaction listing to extract) << transactions to
-     * extract >> S.I.P.BALANCESUMMARY << installment transaction details >>
+     * extract >> InstallmentBalanceSummary << installment transaction details >>
      */
     private String extractTransactionsOnly() {
         String delimiterRegex = "\\d{6}-\\d{1}-\\d{2}-\\d{7}-\\S*\\s";
@@ -400,10 +420,10 @@ public class BPICreditStatement extends CreditStatement {
      */
     public void extractInstallmentDetails() {
 
-        if (!rawString.contains("S.I.P.BALANCESUMMARY"))
+        if (!rawString.contains("InstallmentBalanceSummary"))
             return;
 
-        String transactionsOnly = extractTransactionsOnly().split("S.I.P.BALANCESUMMARY")[1];
+        String transactionsOnly = extractTransactionsOnly().split("InstallmentBalanceSummary")[1];
 
         if (!transactionsOnly.isEmpty()) {
             String installmentRegex = "(\\d{6})(\\d{6})(.+\\D{2})((\\d{1,3},)*\\d{1,3}\\.\\d{2})((\\d{1,3},)*\\d{1,3}\\.\\d{2})";
@@ -450,6 +470,9 @@ public class BPICreditStatement extends CreditStatement {
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void saveToSpreadSheet(Path p) {
 
@@ -458,13 +481,9 @@ public class BPICreditStatement extends CreditStatement {
         Sheet detailsSheet = wb.createSheet("Transactions");
         Sheet installmentSheet = wb.createSheet("Installment");
 
-        // create header style and content style
-        CellStyle headerStyle = wb.createCellStyle();
-        CellStyle contentStyle = wb.createCellStyle();
-
-        enterSummaryData(summarySheet, headerStyle, contentStyle);
-        enterDetails(detailsSheet, contentStyle);
-        enterInstallmentData(installmentSheet, contentStyle);
+        enterSummaryData(summarySheet, wb);
+        enterDetails(detailsSheet, wb);
+        enterInstallmentData(installmentSheet, wb);
 
         try (OutputStream fileOut = Files.newOutputStream(p, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
             wb.write(fileOut);
@@ -475,19 +494,218 @@ public class BPICreditStatement extends CreditStatement {
 
     }
 
-    private void enterSummaryData(Sheet sheet, CellStyle headerStyle, CellStyle contentStyle) {
-        // TODO implement method
-        throw new UnsupportedOperationException("This method has not yet been implemented");
+    private void enterSummaryData(Sheet sheet, Workbook wb) {
+        int currentRow = 0;
+
+        sheet.setDisplayGridlines(false);
+
+        /* Header */
+        CellStyle headerStyle = defineStyle(wb, DataType.STRING, true);
+        Cell headerCell = sheet.createRow(currentRow++).createCell(0);
+        headerCell.setCellValue("Summary");
+        headerCell.setCellStyle(headerStyle);
+
+        /* Contents */
+        CellStyle contentLabelStyle = defineStyle(wb, DataType.STRING, false);
+        CellStyle contentDateStyle = defineStyle(wb, DataType.DATE, false);
+        CellStyle contentAmountStyle = defineStyle(wb, DataType.AMOUNT, false);
+
+        // Statement Type
+        addSummaryContentRow(sheet.createRow(currentRow++), "Bank Statement Type", type.name(), contentLabelStyle,
+                contentLabelStyle, DataType.STRING);
+
+        // Statement Date
+        addSummaryContentRow(sheet.createRow(currentRow++), "Statement Date", statementDate, contentLabelStyle,
+                contentDateStyle, DataType.DATE);
+
+        // Due Date
+        addSummaryContentRow(sheet.createRow(currentRow++), "Due Date", dueDate, contentLabelStyle, contentDateStyle,
+                DataType.DATE);
+
+        // Minimum Amount Due
+        addSummaryContentRow(sheet.createRow(currentRow++), "Minimum Amount Due", minAmountDue, contentLabelStyle,
+                contentAmountStyle, DataType.AMOUNT);
+
+        // Unbilled Installment Amount
+        addSummaryContentRow(sheet.createRow(currentRow++), "Unbilled Installment Amount", unbilledInstallmentAmt,
+                contentLabelStyle, contentAmountStyle, DataType.AMOUNT);
+
+        currentRow++; // empty row
+
+        // Previous Balance
+        addSummaryContentRow(sheet.createRow(currentRow++), "Previous Balance", beginningBalance, contentLabelStyle,
+                contentAmountStyle, DataType.AMOUNT);
+
+        // Total Credits
+        addSummaryContentRow(sheet.createRow(currentRow++), "Total Credits", totalCredits, contentLabelStyle,
+                contentAmountStyle, DataType.AMOUNT);
+
+        // Total Debits
+        addSummaryContentRow(sheet.createRow(currentRow++), "Total Debits", (totalDebits * -1), contentLabelStyle,
+                contentAmountStyle, DataType.AMOUNT);
+
+        // Total Amount Due
+        addSummaryContentRow(sheet.createRow(currentRow++), "Total Amount Due", endingBalance, contentLabelStyle,
+                contentAmountStyle, DataType.AMOUNT);
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+
     }
 
-    private void enterDetails(Sheet sheet, CellStyle contentStyle) {
-        // TODO implement method
-        throw new UnsupportedOperationException("This method has not yet been implemented");
+    private void enterDetails(Sheet sheet, Workbook wb) {
+        int currentRow = 0;
+
+        sheet.setDisplayGridlines(false);
+
+        /* Header */
+        CellStyle headerStyle = defineStyle(wb, DataType.STRING, true);
+        Row headerRow = sheet.createRow(currentRow++);
+        String[] headers = { "Transaction Date", "Post Date", "Description", "Amount" };
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i, CellType.STRING);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        /* Contents */
+        CellStyle contentLabelStyle = defineStyle(wb, DataType.STRING, false);
+        CellStyle contentDateStyle = defineStyle(wb, DataType.DATE, false);
+        CellStyle contentAmountStyle = defineStyle(wb, DataType.AMOUNT, false);
+
+        for (AbstractTransaction txn : transactions) {
+
+            Row row = sheet.createRow(currentRow++);
+            CreditTransaction creditTxn = (CreditTransaction) txn;
+
+            Cell dateCell = row.createCell(0);
+            dateCell.setCellValue(creditTxn.getTransactionDate());
+            dateCell.setCellStyle(contentDateStyle);
+
+            Cell postDateCell = row.createCell(1);
+            postDateCell.setCellValue(creditTxn.getPostDate());
+            postDateCell.setCellStyle(contentDateStyle);
+
+            Cell descCell = row.createCell(2);
+            descCell.setCellValue(creditTxn.getDescription());
+            descCell.setCellStyle(contentLabelStyle);
+
+            Cell amountCell = row.createCell(3);
+            amountCell.setCellValue(creditTxn.getAmount());
+            amountCell.setCellStyle(contentAmountStyle);
+        }
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+        sheet.autoSizeColumn(2);
+        sheet.autoSizeColumn(3);
+
     }
 
-    private void enterInstallmentData(Sheet sheet, CellStyle contentStyle) {
-        // TODO implement method
-        throw new UnsupportedOperationException("This method has not yet been implemented");
+    private void enterInstallmentData(Sheet sheet, Workbook wb) {
+        int currentRow = 0;
+
+        sheet.setDisplayGridlines(false);
+
+        /* Header */
+        CellStyle headerStyle = defineStyle(wb, DataType.STRING, true);
+        Row headerRow = sheet.createRow(currentRow++);
+        String[] headers = { "Transaction Date", "Last Payment Date", "Description", "Amount", "Remaining Balance" };
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i, CellType.STRING);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        /* Contents */
+        CellStyle contentLabelStyle = defineStyle(wb, DataType.STRING, false);
+        CellStyle contentDateStyle = defineStyle(wb, DataType.DATE, false);
+        CellStyle contentAmountStyle = defineStyle(wb, DataType.AMOUNT, false);
+
+        for (AbstractTransaction txn : installmentTxns) {
+
+            Row row = sheet.createRow(currentRow++);
+            InstallmentTransaction inmt = (InstallmentTransaction) txn;
+
+            Cell dateCell = row.createCell(0);
+            dateCell.setCellValue(inmt.getTransactionDate());
+            dateCell.setCellStyle(contentDateStyle);
+
+            Cell lastPaymentDateCell = row.createCell(1);
+            lastPaymentDateCell.setCellValue(inmt.getLastPaymentDate());
+            lastPaymentDateCell.setCellStyle(contentDateStyle);
+
+            Cell descCell = row.createCell(2);
+            descCell.setCellValue(inmt.getDescription());
+            descCell.setCellStyle(contentLabelStyle);
+
+            Cell amountCell = row.createCell(3);
+            amountCell.setCellValue(inmt.getAmount());
+            amountCell.setCellStyle(contentAmountStyle);
+
+            Cell balCell = row.createCell(4);
+            balCell.setCellValue(inmt.getRemainingBal());
+            balCell.setCellStyle(contentAmountStyle);
+        }
+
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
+        sheet.autoSizeColumn(2);
+        sheet.autoSizeColumn(3);
+        sheet.autoSizeColumn(4);
+
+    }
+
+    private CellStyle defineStyle(Workbook wb, DataType dataType, boolean isHeader) {
+        CellStyle style = wb.createCellStyle();
+        Font font = wb.createFont();
+        DataFormat df = wb.createDataFormat();
+
+        font.setBold(isHeader);
+        font.setFontName("Arial Narrow");
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        switch (dataType) {
+        case DATE:
+            style.setDataFormat(df.getFormat("m/d/yy"));
+            break;
+        case AMOUNT:
+            style.setDataFormat(df.getFormat("#,##0.00"));
+            break;
+        case STRING:
+            break;
+        }
+
+        return style;
+    }
+
+    private void addSummaryContentRow(Row row, String label, Object value, CellStyle labelStyle, CellStyle valueStyle,
+            DataType valueType) {
+
+        Cell labelCell = row.createCell(0, CellType.STRING);
+        labelCell.setCellValue(label);
+        labelCell.setCellStyle(labelStyle);
+
+        Cell valueCell = row.createCell(1);
+
+        switch (valueType) {
+        case STRING:
+            String stringValue = String.valueOf(value);
+            valueCell.setCellValue(stringValue);
+            break;
+        case DATE:
+            LocalDate dateValue = (LocalDate) value;
+            valueCell.setCellValue(dateValue);
+            break;
+        case AMOUNT:
+            Double amountValue = (Double) value;
+            valueCell.setCellValue(amountValue);
+            break;
+        }
+
+        valueCell.setCellStyle(valueStyle);
+
     }
 
 }

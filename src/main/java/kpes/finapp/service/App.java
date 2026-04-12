@@ -12,6 +12,7 @@ import static kpes.finapp.service.protoype.BankStatementParser.saveBankStatement
 
 import kpes.finapp.service.protoype.OldBankStatement;
 import kpes.finapp.service.txns.CreditTransaction;
+import kpes.finapp.service.txns.InstallmentTransaction;
 import kpes.finapp.service.base.AbstractTransaction;
 import kpes.finapp.service.protoype.BankStatementParser.Bank;
 
@@ -36,36 +37,25 @@ public class App {
 
         Path pdfFile = Paths.get(pdfPath);
 
+        Path outputPath = Paths.get("/home/kpes/Desktop/PersonalProjects/JavaProgramming/test.xlsx");
+
         BPICreditStatement bpicc = new BPICreditStatement();
-        if (bpicc.extractStatementText(pdfFile, new PDFBoxExtractor())) {
-            // bpicc.preprocessRawText();
-            // System.out.println(bpicc.getRawString());
-            bpicc.parseRawText();
-            for (AbstractTransaction txn : bpicc.getTransactions()) {
-                System.out.println((CreditTransaction) txn);
-            }
-            System.out.println("Number of transactions: " + bpicc.getTransactions().size());
-        }
+        bpicc.extractStatementToSS(pdfFile, outputPath, new PDFBoxExtractor());
 
-        // bpicc.extractStatementText(pdfFile, (p, c) -> "");
+        // if (bpicc.extractStatementText(pdfFile, new PDFBoxExtractor())) {
 
-        // String fullText = BankStatementParser.extractText(pdfFile);
-        // String txtList = parseData(fullText, Bank.BPICC);
-        // BankStatement bs = processData(txtList, Bank.BPICC);
+        // bpicc.parseRawText();
+        // bpicc.saveToSpreadSheet(outputPath);
 
-        // for (BankTransaction txn: bs.getSummary()) {
-        // System.out.println(txn);
         // }
-        // System.out.println(bs.getTotalTxnAmount());
 
         // --------------- temp file generation -------------------
 
         // OldBankStatement bs1 = createDatedBankStatement(pdfFile, Bank.BPICC);
 
         // System.out.println(bs1);
-        // Path filePath = Paths.get("BankStatements/mar2026.xlsx");
 
-        // saveBankStatementToXlsx(filePath, bs1);
+        // saveBankStatementToXlsx(outputPath, bs1);
 
         // --------------- temp file generation -------------------
 

@@ -131,6 +131,40 @@ public abstract class AbstractStatement implements SSExportable {
         return extractStatementText(path, extractor, "");
     }
 
+    /**
+     * Full method to extract, parse, and save ENCRYPTED bank statement to
+     * spreadsheet. Calls
+     * {@link #extractStatementText(Path, TextExtractor, String)},
+     * {@link #parseRawText()}, {@link #saveToSpreadSheet(Path)} in sequence.
+     * 
+     * @param input     - path to the Bank Statement PDF file
+     * @param pw        - password for decrypting encrypted Bank Statement PDF file
+     * @param output    - path to the output spreadsheet file
+     * @param extractor - {@link TextExtractor} implementation
+     */
+    public void extractStatementToSS(Path input, String pw, Path output, TextExtractor<Path, String> extractor) {
+        if (extractStatementText(input, extractor, pw)) {
+            parseRawText();
+            saveToSpreadSheet(output);
+        }
+    }
+
+    /**
+     * Full method to extract, parse, and save UNENCRYPTED bank statement to
+     * spreadsheet. Calls {@link #extractStatementText(Path, TextExtractor)},
+     * {@link #parseRawText()}, {@link #saveToSpreadSheet(Path)} in sequence.
+     * 
+     * @param input     - path to the Bank Statement PDF file
+     * @param output    - path to the output spreadsheet file
+     * @param extractor - {@link TextExtractor} implementation
+     */
+    public void extractStatementToSS(Path input, Path output, TextExtractor<Path, String> extractor) {
+        if (extractStatementText(input, extractor)) {
+            parseRawText();
+            saveToSpreadSheet(output);
+        }
+    }
+
     /* Abstract Methods */
 
     /**

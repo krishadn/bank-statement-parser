@@ -9,16 +9,27 @@ import java.time.LocalDate;
  */
 public abstract class CreditStatement extends AbstractStatement {
 
+    /* Enums */
+
+    /**
+     * Enum for supported credit statement types
+     */
+    public enum CreditStatementType {
+        BPICC
+    }
+
     /* Constants */
     private static final double EPSILON = 0.000001;
 
     /* Fields */
 
+    protected CreditStatementType type;
+
     // date fields
     protected LocalDate statementDate;
     protected LocalDate dueDate;
 
-    // other new fields
+    // summary fields
     protected double minAmountDue;
 
     /**
@@ -29,6 +40,7 @@ public abstract class CreditStatement extends AbstractStatement {
         statementDate = null;
         dueDate = null;
         minAmountDue = 0;
+        type = null;
     }
 
     /* Getters */
@@ -43,6 +55,10 @@ public abstract class CreditStatement extends AbstractStatement {
 
     public double getMinAmountDue() {
         return minAmountDue;
+    }
+
+    public CreditStatementType getType() {
+        return type;
     }
 
     /* Concrete Methods */
@@ -74,7 +90,6 @@ public abstract class CreditStatement extends AbstractStatement {
         if (isBalanced() && isTransactionComplete()) {
             parsed = true;
         } else {
-            System.out.printf("isBalanced: %b ; isTransactionComplete: %b %n", isBalanced(), isTransactionComplete());
             clearFields();
             throw new AssertionError("Bank Statement has erroneous data");
         }
@@ -109,6 +124,7 @@ public abstract class CreditStatement extends AbstractStatement {
         statementDate = null;
         dueDate = null;
         minAmountDue = 0;
+        type = null;
     }
 
     /* Abstract Methods */
