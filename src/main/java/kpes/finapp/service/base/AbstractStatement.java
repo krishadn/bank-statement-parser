@@ -17,6 +17,26 @@ import kpes.finapp.service.inf.TextExtractor;
  */
 public abstract class AbstractStatement implements SSExportable {
 
+    /* Enums */
+
+    /**
+     * Enum for supported statement types
+     */
+    public enum StatementType {
+        BPICC("BPI Credit Card Statement");
+
+        public final String fullType;
+
+        private StatementType(String fullType) {
+            this.fullType = fullType;
+        }
+
+        public String getFullType() {
+            return fullType;
+        }
+
+    }
+
     /* Fields */
 
     // regular expression to use for checking if text extracted is from a valid bank

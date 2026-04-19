@@ -41,7 +41,7 @@ public class BPICreditStatement extends CreditStatement {
         super();
         unbilledInstallmentAmt = 0;
         installmentTxns = new ArrayList<>();
-        type = CreditStatementType.BPICC;
+        type = StatementType.BPICC;
     }
 
     /* Getters */
@@ -511,8 +511,8 @@ public class BPICreditStatement extends CreditStatement {
         CellStyle contentAmountStyle = defineStyle(wb, DataType.AMOUNT, false);
 
         // Statement Type
-        addSummaryContentRow(sheet.createRow(currentRow++), "Bank Statement Type", type.name(), contentLabelStyle,
-                contentLabelStyle, DataType.STRING);
+        addSummaryContentRow(sheet.createRow(currentRow++), "Bank Statement Type", type.getFullType(),
+                contentLabelStyle, contentLabelStyle, DataType.STRING);
 
         // Statement Date
         addSummaryContentRow(sheet.createRow(currentRow++), "Statement Date", statementDate, contentLabelStyle,

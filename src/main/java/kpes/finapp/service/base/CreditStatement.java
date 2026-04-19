@@ -9,21 +9,12 @@ import java.time.LocalDate;
  */
 public abstract class CreditStatement extends AbstractStatement {
 
-    /* Enums */
-
-    /**
-     * Enum for supported credit statement types
-     */
-    public enum CreditStatementType {
-        BPICC
-    }
-
     /* Constants */
     private static final double EPSILON = 0.000001;
 
     /* Fields */
 
-    protected CreditStatementType type;
+    protected StatementType type;
 
     // date fields
     protected LocalDate statementDate;
@@ -57,7 +48,7 @@ public abstract class CreditStatement extends AbstractStatement {
         return minAmountDue;
     }
 
-    public CreditStatementType getType() {
+    public StatementType getType() {
         return type;
     }
 
