@@ -283,7 +283,7 @@ public class BPICreditStatement extends CreditStatement {
         String transactionsOnly = extractTransactionsOnly().split("InstallmentBalanceSummary")[0];
 
         if (!transactionsOnly.isEmpty()) {
-            String txnRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})(.+\\D{2}(:\\d{2}/\\d{2})?(\\d{11})?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+            String txnRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})(.+?(:\\d{2}/\\d{2})?(\\d{11})?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
             Pattern p = Pattern.compile(txnRegex);
             Matcher matcher = p.matcher(transactionsOnly);
 

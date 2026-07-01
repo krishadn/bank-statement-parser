@@ -1,6 +1,7 @@
 package kpes.finapp.service.base;
 
 import java.time.LocalDate;
+import java.util.logging.Logger;
 
 /**
  * Base class for credit card statements
@@ -8,6 +9,9 @@ import java.time.LocalDate;
  * @author Krizzia Santillan
  */
 public abstract class CreditStatement extends AbstractStatement {
+
+    private static final Logger LOGGER = Logger.getLogger(CreditStatement.class.getName());
+
 
     /* Constants */
     private static final double EPSILON = 0.000001;
@@ -78,6 +82,10 @@ public abstract class CreditStatement extends AbstractStatement {
         extractTransactionList();
 
         /* validate parsed data */
+
+        LOGGER.info("isBalanced: " + isBalanced());
+        LOGGER.info("isTransactionComplete: " + isTransactionComplete());
+
         if (isBalanced() && isTransactionComplete()) {
             parsed = true;
         } else {
