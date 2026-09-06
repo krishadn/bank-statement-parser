@@ -283,8 +283,8 @@ public class BPICreditStatement extends CreditStatement {
         String transactionsOnly = extractTransactionsOnly().split("InstallmentBalanceSummary")[0];
 
         if (!transactionsOnly.isEmpty()) {
-            String txnRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})(.+?(:\\d{2}/\\d{2})?(\\d{11})?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
-            Pattern p = Pattern.compile(txnRegex);
+            String txnRegex = "([a-zA-Z]{3,9}\\d{1,2})([a-zA-Z]{3,9}\\d{1,2})(.+?((:\\d{2}/\\d{2})|(\\s[a-zA-Z]+\\d{1,3}\\.\\d{2})|(\\d{11}))?)(-?(\\d{1,3},)*\\d{1,3}\\.\\d{2})";
+            Pattern p = Pattern.compile(txnRegex,Pattern.DOTALL);
             Matcher matcher = p.matcher(transactionsOnly);
 
             while (matcher.find()) {
@@ -292,7 +292,7 @@ public class BPICreditStatement extends CreditStatement {
                 LocalDate txnDate = formatDate(matcher.group(1).trim() + "," + statementDate.getYear());
                 LocalDate postDate = formatDate(matcher.group(2).trim() + "," + statementDate.getYear());
                 String description = matcher.group(3);
-                double amount = parseAmount(matcher.group(6));
+                double amount = parseAmount(matcher.group(8));
 
                 AbstractTransaction txn = new CreditTransaction(txnDate, description, amount, postDate);
                 transactions.add(txn);
